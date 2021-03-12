@@ -179,10 +179,10 @@ void Scene::LoadSkybox(const char *sky_dir)
 	const char *maps[] = { "/right.jpg", "/left.jpg", "/top.jpg", "/bottom.jpg", "/front.jpg", "/back.jpg" };
 
 	for (int i = 0; i < 6; i++) {
-		strncpy(buffer, sky_dir, sizeof(buffer));
-		strncat(buffer, maps[i], sizeof(buffer));
+		strcpy_s(buffer, sizeof(buffer), sky_dir);
+		strcat_s(buffer, sizeof(buffer), maps[i]);
 		filenames[i] = (char *)malloc(sizeof(buffer));
-		strncpy(filenames[i], buffer, sizeof(buffer));
+		strcpy_s(filenames[i], sizeof(buffer), buffer);
 	}
 	
 	ILuint ImageName;

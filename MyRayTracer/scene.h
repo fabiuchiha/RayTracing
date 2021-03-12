@@ -1,12 +1,10 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include <cstring>
 #include <vector>
 #include <cmath>
 #include <IL/il.h>
 #include <time.h>
-
 using namespace std;
 
 #include "camera.h"
@@ -38,7 +36,7 @@ public:
 	Material() :
 		m_diffColor(Color(0.2f, 0.2f, 0.2f)), m_Diff( 0.2f ), m_specColor(Color(1.0f, 1.0f, 1.0f)), m_Spec( 0.8f ), m_Shine(20), m_Refl( 1.0f ), m_T( 0.0f ), m_RIndex( 1.0f ){};
 
-	Material (const Color& c, float Kd, const Color& cs, float Ks, float Shine, float T, float ior) {
+	Material (Color& c, float Kd, Color& cs, float Ks, float Shine, float T, float ior) {
 		m_diffColor = c; m_Diff = Kd; m_specColor = cs; m_Spec = Ks; m_Shine = Shine; m_Refl = Ks; m_T = T; m_RIndex = ior;
 	}
 
@@ -69,7 +67,7 @@ class Light
 {
 public:
 
-	Light( const Vector& pos, const Color& col ): position(pos), color(col) {};
+	Light( Vector& pos, Color& col ): position(pos), color(col) {};
 	
 	Vector position;
 	Color color;
@@ -123,7 +121,7 @@ protected:
 class Sphere : public Object
 {
 public:
-	Sphere( const Vector& a_center, float a_radius ) : 
+	Sphere( Vector& a_center, float a_radius ) : 
 		center( a_center ), SqRadius( a_radius * a_radius ), 
 		radius( a_radius ) {};
 
