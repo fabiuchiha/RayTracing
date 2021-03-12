@@ -1,10 +1,14 @@
  ///////////////////////////////////////////////////////////////////////
 //
 // P3D Course
-// (c) 2021 by João Madeiras Pereira
+// (c) 2021 by Joï¿½o Madeiras Pereira
 //Ray Tracing P3F scenes and drawing points with Modern OpenGL
 //
 ///////////////////////////////////////////////////////////////////////
+
+#ifdef __unix__ 
+	#include "linux.h"
+#endif
 
 #include <stdlib.h>
 #include <iostream>
@@ -186,8 +190,8 @@ void createBufferObjects()
 	glGenBuffers(2, VboId);
 	glBindBuffer(GL_ARRAY_BUFFER, VboId[0]);
 
-	/* Só se faz a alocação dos arrays glBufferData (NULL), e o envio dos pontos para a placa gráfica
-	é feito na drawPoints com GlBufferSubData em tempo de execução pois os arrays são GL_DYNAMIC_DRAW */
+	/* Sï¿½ se faz a alocaï¿½ï¿½o dos arrays glBufferData (NULL), e o envio dos pontos para a placa grï¿½fica
+	ï¿½ feito na drawPoints com GlBufferSubData em tempo de execuï¿½ï¿½o pois os arrays sï¿½o GL_DYNAMIC_DRAW */
 	glBufferData(GL_ARRAY_BUFFER, size_vertices, NULL, GL_DYNAMIC_DRAW);
 	glEnableVertexAttribArray(VERTEX_COORD_ATTRIB);
 	glVertexAttribPointer(VERTEX_COORD_ATTRIB, 2, GL_FLOAT, 0, 0, 0);
@@ -562,8 +566,8 @@ void init_scene(void)
 		while (true) {
 			cout << "Input the Scene Name: ";
 			cin >> input_user;
-			strcpy_s(scene_name, sizeof(scene_name), scenes_dir);
-			strcat_s(scene_name, sizeof(scene_name), input_user);
+			strncpy(scene_name, scenes_dir, sizeof(scene_name));
+			strncat(scene_name, input_user, sizeof(scene_name));
 
 			ifstream file(scene_name, ios::in);
 			if (file.fail()) {
