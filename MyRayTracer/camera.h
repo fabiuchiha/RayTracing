@@ -75,9 +75,9 @@ public:
 	Ray PrimaryRay(const Vector& pixel_sample) //  Rays cast from the Eye to a pixel sample which is in Viewport coordinates
 	{
 		// do we need to convert u, v and n before using them here?
-		Vector o = eye - u*(w / 2.0) - v*(h / 2.0) - n*plane_dist;
+		Vector o = eye - u*(w / 2.0) - v*(h / 2.0) + n*plane_dist;
 		Vector p_xy = o + u*(w * pixel_sample.x / res_x) + v*(h * pixel_sample.y / res_y);
-		Vector ray_dir = eye - p_xy;
+		Vector ray_dir = p_xy - eye;
 		ray_dir = ray_dir / ray_dir.length();
 
 		return Ray(eye, ray_dir);
