@@ -298,8 +298,8 @@ void renderScene()
 			pixel.x = x + 0.5f;  
 			pixel.y = y + 0.5f;
 
-			/*YOUR 2 FUNTIONS:
 			Ray ray = scene->GetCamera()->PrimaryRay(pixel);
+			/*YOUR 2 FUNTIONS:
 			color = rayTracing(ray, 1, 1.0).clamp();
 			*/
 
