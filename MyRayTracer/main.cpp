@@ -19,6 +19,7 @@
 #include <time.h>
 #include <chrono>
 #include <conio.h>
+#include <limits>
 
 #include <GL/glew.h>
 #include <GL/freeglut.h>
@@ -86,7 +87,20 @@ int WindowHandle = 0;
 Color rayTracing( Ray ray, int depth, float ior_1)  //index of refraction of medium 1 where the ray is travelling
 {
 	//INSERT HERE YOUR CODE
-	return Color(0.0f, 0.0f, 0.0f);
+	// intersect ray with all objects and find closest intersection
+	Color c = scene->GetBackgroundColor();
+	float closest_d = std::numeric_limits<float>::max();
+	for (int i = 0; i < scene->getNumObjects(); i++) {
+		Object* obj = scene->getObject(i);
+		float d;
+		if (obj->intercepts(ray, d)) {
+			if (closest_d > d) {
+				c = obj->GetMaterial()->GetDiffColor();
+			}
+		}
+	}
+
+	return c;
 }
 
 /////////////////////////////////////////////////////////////////////// ERRORS
@@ -299,11 +313,7 @@ void renderScene()
 			pixel.y = y + 0.5f;
 
 			Ray ray = scene->GetCamera()->PrimaryRay(pixel);
-			/*YOUR 2 FUNTIONS:
 			color = rayTracing(ray, 1, 1.0).clamp();
-			*/
-
-			color = scene->GetBackgroundColor(); //TO CHANGE - just for the template
 
 			img_Data[counter++] = u8fromfloat((float)color.r());
 			img_Data[counter++] = u8fromfloat((float)color.g());
