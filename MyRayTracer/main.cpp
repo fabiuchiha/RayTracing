@@ -90,32 +90,38 @@ Color rayTracing( Ray ray, int depth, float ior_1)  //index of refraction of med
 	// intersect ray with all objects and find closest intersection
 	Color c = scene->GetBackgroundColor();
 	float closest_d = std::numeric_limits<float>::max();
+	Object* hit_obj = NULL;
 	for (int i = 0; i < scene->getNumObjects(); i++) {
 		Object* obj = scene->getObject(i);
 		float d;
 		if (obj->intercepts(ray, d)) {
-			
-			//compute normal at hit point
-			Vector intercept_point = ray.origin + ray.direction * d;
-			Vector hit_normal = obj->getNormal(intercept_point);
-
-			//for each light source
-			for (int l = 0; l < scene->getNumLights(); l++) {
-				Light* source_light = scene->getLight(l);
-				Vector L = source_light->position - intercept_point;
-				
-				if (L * hit_normal > 0) {
-					c = obj->GetMaterial()->GetDiffColor() * obj->GetMaterial()->GetSpecColor();
-				}
-			}
-			
-			if (closest_d > d) {
-				return c;
+			if (d < closest_d) {
+				closest_d = d;
+				hit_obj = obj;
 			}
 		}
 	}
+	if (hit_obj == NULL) return c;
+	else {
 
-	return c;
+		//compute normal at hit point
+		Vector intercept_point = ray.origin + ray.direction * closest_d;
+		Vector hit_normal = hit_obj->getNormal(intercept_point);
+
+		//for each light source
+		for (int l = 0; l < scene->getNumLights(); l++) {
+			c = scene->GetBackgroundColor();
+			Light* source_light = scene->getLight(l);
+			Vector L = source_light->position - intercept_point;
+
+			if (L * hit_normal.normalize() > 0) {
+				c = hit_obj->GetMaterial()->GetDiffColor() + hit_obj->GetMaterial()->GetSpecColor();
+			}
+		}
+		if (depth >= MAX_DEPTH) return c;
+
+		return c;
+	}
 }
 
 /////////////////////////////////////////////////////////////////////// ERRORS
