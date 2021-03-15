@@ -112,10 +112,10 @@ Color rayTracing( Ray ray, int depth, float ior_1)  //index of refraction of med
 		for (int l = 0; l < scene->getNumLights(); l++) {
 			c = scene->GetBackgroundColor();
 			Light* source_light = scene->getLight(l);
-			Vector L = source_light->position - intercept_point;
+			Vector L = (source_light->position - intercept_point).normalize();
 
 			if (L * hit_normal.normalize() > 0) {
-				c = hit_obj->GetMaterial()->GetDiffColor() + hit_obj->GetMaterial()->GetSpecColor();
+				c = hit_obj->GetMaterial()->GetDiffColor() * (L * hit_normal.normalize()) * source_light->color;
 			}
 		}
 		if (depth >= MAX_DEPTH) return c;
