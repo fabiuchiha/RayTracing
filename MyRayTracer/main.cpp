@@ -57,7 +57,7 @@ long myTime, timebase = 0, frame = 0;
 char s[32];
 
 //Enable OpenGL drawing.  
-bool drawModeEnabled = true;
+bool drawModeEnabled = false;
 
 bool P3F_scene = true; //choose between P3F scene or a built-in random scene
 
@@ -94,8 +94,23 @@ Color rayTracing( Ray ray, int depth, float ior_1)  //index of refraction of med
 		Object* obj = scene->getObject(i);
 		float d;
 		if (obj->intercepts(ray, d)) {
+			
+			//compute normal at hit point
+			Vector intercept_point = ray.origin + ray.direction * d;
+			Vector hit_normal = obj->getNormal(intercept_point);
+
+			//for each light source
+			for (int l = 0; l < scene->getNumLights(); l++) {
+				Light* source_light = scene->getLight(l);
+				Vector L = source_light->position - intercept_point;
+				
+				if (L * hit_normal > 0) {
+					c = obj->GetMaterial()->GetDiffColor() * obj->GetMaterial()->GetSpecColor();
+				}
+			}
+			
 			if (closest_d > d) {
-				c = obj->GetMaterial()->GetDiffColor();
+				return c;
 			}
 		}
 	}
