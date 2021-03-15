@@ -6,3 +6,5 @@ x64/
 x86/
 obj/
 main
+/
+MyRayTracer/RT_Output.png
