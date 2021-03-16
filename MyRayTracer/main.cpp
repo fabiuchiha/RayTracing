@@ -57,7 +57,7 @@ long myTime, timebase = 0, frame = 0;
 char s[32];
 
 //Enable OpenGL drawing.  
-bool drawModeEnabled = true;
+bool drawModeEnabled = false;
 
 bool P3F_scene = true; //choose between P3F scene or a built-in random scene
 
@@ -107,14 +107,17 @@ Color rayTracing( Ray ray, int depth, float ior_1)  //index of refraction of med
 		//compute normal at hit point
 		Vector intercept_point = ray.origin + ray.direction * closest_d;
 		Vector hit_normal = hit_obj->getNormal(intercept_point);
-		c = hit_obj->GetMaterial()->GetDiffColor();
+
 		//for each light source
 		for (int l = 0; l < scene->getNumLights(); l++) {
 			Light* source_light = scene->getLight(l);
-			Vector L = (source_light->position - intercept_point).normalize();
+			Vector L = (intercept_point - source_light->position).normalize();
 
-			if (L * hit_normal.normalize() > 0) {
-				c =  c * (L * hit_normal.normalize()) * source_light->color;
+			if (L * hit_normal > 0) {
+				if (l == 0) {
+					c = hit_obj->GetMaterial()->GetDiffColor() * (source_light->color * (L * hit_normal.normalize()));
+				}
+				c *= (source_light->color * (L * hit_normal.normalize())) ;
 			}
 		}
 		if (depth >= MAX_DEPTH) return c;
