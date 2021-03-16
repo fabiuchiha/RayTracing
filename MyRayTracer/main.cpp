@@ -88,7 +88,6 @@ Color rayTracing( Ray ray, int depth, float ior_1)  //index of refraction of med
 {
 	//INSERT HERE YOUR CODE
 	// intersect ray with all objects and find closest intersection
-	Color c = scene->GetBackgroundColor();
 	float closest_d = std::numeric_limits<float>::max();
 	Object* hit_obj = NULL;
 	
@@ -102,24 +101,25 @@ Color rayTracing( Ray ray, int depth, float ior_1)  //index of refraction of med
 			}
 		}
 	}
-	if (hit_obj == NULL) return c;
+	if (hit_obj == NULL) return scene->GetBackgroundColor();
 	else {
 		
 		//compute normal at hit point
 		Vector intercept_point = ray.origin + ray.direction * closest_d;
 		Vector hit_normal = hit_obj->getNormal(intercept_point);
-		c = hit_obj->GetMaterial()->GetDiffColor();
+		//c = hit_obj->GetMaterial()->GetDiffColor();
+		Color c;
 
 		//for each light source
 		for (int l = 0; l < scene->getNumLights(); l++) {
 			Light* source_light = scene->getLight(l);
 			Vector L = (source_light->position - intercept_point).normalize();
 			//Vector refection_vector =  hit_normal * (2 * (L * hit_normal)) - L;
-			Vector halfway_vector = (L + (ray.origin - intercept_point)) / 2;
+			Vector halfway_vector = (L - ray.direction).normalize();
 
 			if (L * hit_normal > 0) {
 				//diffiuse component
-				c += source_light->color * ( hit_obj->GetMaterial()->GetDiffuse() * max(hit_normal * L, 0.0f));
+				c += source_light->color * ( hit_obj->GetMaterial()->GetDiffuse() * max(hit_normal * L, 0.0f)) * hit_obj->GetMaterial()->GetDiffColor();
 				
 				//specular component
 				c += source_light->color * ( hit_obj->GetMaterial()->GetSpecular() * pow(max(halfway_vector * hit_normal, 0.0f), hit_obj->GetMaterial()->GetShine()));
