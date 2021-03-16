@@ -84,17 +84,37 @@ Vector Plane::getNormal(Vector point)
 
 bool Sphere::intercepts(Ray& r, float& t )
 {
-	Vector L = center - r.origin;
-	float tc = L * r.direction;
-	float d_2 = tc*tc - L*L;
+	Vector oc = r.origin - center;
+	float b = oc*r.direction;
+	float c = oc*oc - SqRadius;
 
-	if (d_2 > SqRadius) {
+	float inner_root = b*b - c;
+	if (inner_root < 0) {
 		return false;
 	}
 
-	float tc1 = sqrt(SqRadius - d_2);
-	t = tc - tc1;
-	return true;
+	float root = sqrt(inner_root);
+	float s0 = b-root;
+	float s1 = b+root;
+
+	if (s0 > s1) {
+		float tmp = s0;
+		s0 = s1;
+		s1 = tmp;
+	}
+
+	if (s0 > 0) {
+		t = s0;
+		return true;
+	}
+
+	if (s1 > 0) {
+		t = s1;
+		return true;
+	}
+
+	// (s0 < 0 && s1 < 0)
+	return false;
 }
 
 
