@@ -57,7 +57,7 @@ long myTime, timebase = 0, frame = 0;
 char s[32];
 
 //Enable OpenGL drawing.  
-bool drawModeEnabled = false;
+bool drawModeEnabled = true;
 
 bool P3F_scene = true; //choose between P3F scene or a built-in random scene
 
@@ -119,10 +119,10 @@ Color rayTracing( Ray ray, int depth, float ior_1)  //index of refraction of med
 
 			if (L * hit_normal > 0) {
 				//diffiuse component
-				c += source_light->color * ( hit_obj->GetMaterial()->GetDiffuse() * (hit_normal * L));
+				c += source_light->color * ( hit_obj->GetMaterial()->GetDiffuse() * max(hit_normal * L, 0.0f));
 				
 				//specular component
-				c += source_light->color * ( hit_obj->GetMaterial()->GetSpecular() * pow((halfway_vector * hit_normal), hit_obj->GetMaterial()->GetShine()));
+				c += source_light->color * ( hit_obj->GetMaterial()->GetSpecular() * pow(max(halfway_vector * hit_normal, 0.0f), hit_obj->GetMaterial()->GetShine()));
 			}
 
 		}
