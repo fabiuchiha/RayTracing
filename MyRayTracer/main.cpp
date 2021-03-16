@@ -57,7 +57,7 @@ long myTime, timebase = 0, frame = 0;
 char s[32];
 
 //Enable OpenGL drawing.  
-bool drawModeEnabled = true;
+bool drawModeEnabled = false;
 
 bool P3F_scene = true; //choose between P3F scene or a built-in random scene
 
@@ -91,6 +91,7 @@ Color rayTracing( Ray ray, int depth, float ior_1)  //index of refraction of med
 	Color c = scene->GetBackgroundColor();
 	float closest_d = std::numeric_limits<float>::max();
 	Object* hit_obj = NULL;
+	
 	for (int i = 0; i < scene->getNumObjects(); i++) {
 		Object* obj = scene->getObject(i);
 		float d;
@@ -103,12 +104,12 @@ Color rayTracing( Ray ray, int depth, float ior_1)  //index of refraction of med
 	}
 	if (hit_obj == NULL) return c;
 	else {
-
+		
 		//compute normal at hit point
 		Vector intercept_point = ray.origin + ray.direction * closest_d;
 		Vector hit_normal = hit_obj->getNormal(intercept_point);
+		c = hit_obj->GetMaterial()->GetDiffColor();
 
-		c = Color(0, 0, 0);
 		//for each light source
 		for (int l = 0; l < scene->getNumLights(); l++) {
 			Light* source_light = scene->getLight(l);
@@ -118,10 +119,10 @@ Color rayTracing( Ray ray, int depth, float ior_1)  //index of refraction of med
 
 			if (L * hit_normal > 0) {
 				//diffiuse component
-				c += hit_obj->GetMaterial()->GetDiffColor() * (source_light->color * (L * hit_normal));
+				c += source_light->color * ( hit_obj->GetMaterial()->GetDiffuse() * (hit_normal * L));
 				
 				//specular component
-				c += hit_obj->GetMaterial()->GetSpecColor() * (source_light->color * pow((halfway_vector * hit_normal), hit_obj->GetMaterial()->GetShine()));
+				c += source_light->color * ( hit_obj->GetMaterial()->GetSpecular() * pow((halfway_vector * hit_normal), hit_obj->GetMaterial()->GetShine()));
 			}
 
 		}
