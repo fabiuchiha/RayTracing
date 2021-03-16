@@ -57,7 +57,7 @@ long myTime, timebase = 0, frame = 0;
 char s[32];
 
 //Enable OpenGL drawing.  
-bool drawModeEnabled = false;
+bool drawModeEnabled = true;
 
 bool P3F_scene = true; //choose between P3F scene or a built-in random scene
 
@@ -108,17 +108,22 @@ Color rayTracing( Ray ray, int depth, float ior_1)  //index of refraction of med
 		Vector intercept_point = ray.origin + ray.direction * closest_d;
 		Vector hit_normal = hit_obj->getNormal(intercept_point);
 
+		c = Color(0, 0, 0);
 		//for each light source
 		for (int l = 0; l < scene->getNumLights(); l++) {
 			Light* source_light = scene->getLight(l);
-			Vector L = (intercept_point - source_light->position).normalize();
+			Vector L = (source_light->position - intercept_point).normalize();
+			//Vector refection_vector =  hit_normal * (2 * (L * hit_normal)) - L;
+			Vector halfway_vector = (L + (ray.origin - intercept_point)) / 2;
 
 			if (L * hit_normal > 0) {
-				if (l == 0) {
-					c = hit_obj->GetMaterial()->GetDiffColor() * (source_light->color * (L * hit_normal.normalize()));
-				}
-				c *= (source_light->color * (L * hit_normal.normalize())) ;
+				//diffiuse component
+				c += hit_obj->GetMaterial()->GetDiffColor() * (source_light->color * (L * hit_normal));
+				
+				//specular component
+				c += hit_obj->GetMaterial()->GetSpecColor() * (source_light->color * pow((halfway_vector * hit_normal), hit_obj->GetMaterial()->GetShine()));
 			}
+
 		}
 		if (depth >= MAX_DEPTH) return c;
 
