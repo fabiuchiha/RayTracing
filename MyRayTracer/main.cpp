@@ -119,15 +119,15 @@ Color rayTracing( Ray ray, int depth, float ior_1)  //index of refraction of med
 
 			if (L * hit_normal > 0) {
 				//diffiuse component
-				c += source_light->color * ( hit_obj->GetMaterial()->GetDiffuse() * max(hit_normal * L, 0.0f)) * hit_obj->GetMaterial()->GetDiffColor();
+				c += source_light->color * hit_obj->GetMaterial()->GetDiffuse() * max(hit_normal * L, 0.0f) * hit_obj->GetMaterial()->GetDiffColor();
 				
 				//specular component
-				c += source_light->color * ( hit_obj->GetMaterial()->GetSpecular() * pow(max(halfway_vector * hit_normal, 0.0f), hit_obj->GetMaterial()->GetShine()));
+				c += source_light->color * hit_obj->GetMaterial()->GetSpecular() * pow(max(halfway_vector * hit_normal, 0.0f), hit_obj->GetMaterial()->GetShine()) * hit_obj->GetMaterial()->GetSpecColor();
 			}
 
 		}
 		if (depth >= MAX_DEPTH) return c;
-
+		//cout << "Color: " << c.r() << " " << c.g() << " " << c.b() << " \n";
 		return c;
 	}
 }
