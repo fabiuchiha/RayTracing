@@ -83,9 +83,11 @@ int RES_X, RES_Y;
 
 int WindowHandle = 0;
 
-bool isShadowed(Vector interceptPoint, Vector lightPos) {
+float bias = 0.005f;
+
+bool isShadowed(Vector interceptPoint, Vector lightPos, Vector hitNormal) {
 	Vector lightDir = (lightPos - interceptPoint).normalize();
-	Ray shadowRay = Ray(interceptPoint, lightDir);
+	Ray shadowRay = Ray((interceptPoint + hitNormal*bias), lightDir);
 	for (int i = 0; i < scene->getNumObjects(); i++) {
 		Object* obj = scene->getObject(i);
 		float d;
@@ -130,7 +132,7 @@ Color rayTracing( Ray ray, int depth, float ior_1)  //index of refraction of med
 
 			if (L * hit_normal > 0) {
 				//diffiuse component
-				if (!isShadowed(intercept_point, source_light->position)) {
+				if (!isShadowed(intercept_point, source_light->position, hit_normal)) {
 					c += source_light->color * hit_obj->GetMaterial()->GetDiffuse() * max(hit_normal * L, 0.0f) * hit_obj->GetMaterial()->GetDiffColor();
 
 					//specular component
