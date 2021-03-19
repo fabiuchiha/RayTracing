@@ -83,6 +83,17 @@ int RES_X, RES_Y;
 
 int WindowHandle = 0;
 
+bool isShadowed(Vector interceptPoint, Vector lightPos) {
+	Vector lightDir = (lightPos - interceptPoint).normalize();
+	Ray shadowRay = Ray(interceptPoint, lightDir);
+	for (int i = 0; i < scene->getNumObjects(); i++) {
+		Object* obj = scene->getObject(i);
+		float d;
+		if (obj->intercepts(shadowRay, d)) return true;
+	}
+	return false;
+}
+
 
 Color rayTracing( Ray ray, int depth, float ior_1)  //index of refraction of medium 1 where the ray is travelling
 {
@@ -119,10 +130,12 @@ Color rayTracing( Ray ray, int depth, float ior_1)  //index of refraction of med
 
 			if (L * hit_normal > 0) {
 				//diffiuse component
-				c += source_light->color * hit_obj->GetMaterial()->GetDiffuse() * max(hit_normal * L, 0.0f) * hit_obj->GetMaterial()->GetDiffColor();
-				
-				//specular component
-				c += source_light->color * hit_obj->GetMaterial()->GetSpecular() * pow(max(halfway_vector * hit_normal, 0.0f), hit_obj->GetMaterial()->GetShine()) * hit_obj->GetMaterial()->GetSpecColor();
+				if (!isShadowed(intercept_point, source_light->position)) {
+					c += source_light->color * hit_obj->GetMaterial()->GetDiffuse() * max(hit_normal * L, 0.0f) * hit_obj->GetMaterial()->GetDiffColor();
+
+					//specular component
+					c += source_light->color * hit_obj->GetMaterial()->GetSpecular() * pow(max(halfway_vector * hit_normal, 0.0f), hit_obj->GetMaterial()->GetShine()) * hit_obj->GetMaterial()->GetSpecColor();
+				}
 			}
 
 		}
