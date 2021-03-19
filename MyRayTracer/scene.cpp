@@ -117,40 +117,42 @@ Vector Plane::getNormal(Vector point)
   return PN;
 }
 
+bool solveQuadratic(const float& a, const float& b, const float& c, float& x0, float& x1)
+{
+	float discr = b * b - 4 * a * c;
+	if (discr < 0) return false;
+	else if (discr == 0) x0 = x1 = -0.5 * b / a;
+	else {
+		float q = (b > 0) ?
+			-0.5 * (b + sqrt(discr)) :
+			-0.5 * (b - sqrt(discr));
+		x0 = q / a;
+		x1 = c / q;
+	}
+	if (x0 > x1) std::swap(x0, x1);
+
+	return true;
+}
 
 bool Sphere::intercepts(Ray& r, float& t )
 {
+	float t0, t1;
 	Vector oc = r.origin - center;
-	float b = oc*r.direction;
-	float c = oc*oc - SqRadius;
+	float a = r.direction * r.direction;
+	float b = oc*r.direction*2.0f;
+	float c = (oc*oc) - SqRadius;
 
-	float inner_root = b*b - c;
-	if (inner_root < 0) {
-		return false;
+	if (!solveQuadratic(a, b, c, t0, t1)) return false;
+	if (t0 > t1) std::swap(t0, t1);
+
+	if (t0 < 0) {
+		t0 = t1; // if t0 is negative, let's use t1 instead 
+		if (t0 < 0) return false; // both t0 and t1 are negative 
 	}
 
-	float root = sqrt(inner_root);
-	float s0 = b-root;
-	float s1 = b+root;
+	t = t0;
 
-	if (s0 > s1) {
-		float tmp = s0;
-		s0 = s1;
-		s1 = tmp;
-	}
-
-	if (s0 > 0) {
-		t = s0;
-		return true;
-	}
-
-	if (s1 > 0) {
-		t = s1;
-		return true;
-	}
-
-	// (s0 < 0 && s1 < 0)
-	return false;
+	return true;
 }
 
 

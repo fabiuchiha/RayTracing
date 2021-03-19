@@ -127,7 +127,6 @@ Color rayTracing( Ray ray, int depth, float ior_1)  //index of refraction of med
 
 		}
 		if (depth >= MAX_DEPTH) return c;
-		//cout << "Color: " << c.r() << " " << c.g() << " " << c.b() << " \n";
 		return c;
 	}
 }
