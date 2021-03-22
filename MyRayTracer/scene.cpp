@@ -46,23 +46,26 @@ bool Triangle::intercepts(Ray& r, float& t ) {
 	float i = points[0].z - points[1].z, j = points[0].z - points[2].z, k = r.direction.z, l = points[0].z - r.origin.z;
 
 	//determinats
-	float m = f * k - g * j, n = h * k - g * l, p = f * l - h * j;
-	float q = g * i - e * k, s = e * j - f * i;
+	float m = f * k - g * j;
+	float n = h * k - g * l;
+	float p = f * l - h * j;
+	float q = g * i - e * k;
+	float s = e * j - f * i;
 
-	float denominator = (a * m + b * q + c * s);
+	float denom = (a * m + b * q + c * s);
 
-	float beta = (d * m - b * n - c * p ) / denominator;
+	float beta = (d * m - b * n - c * p ) / denom;
 
 	if (beta < 0.0f) return false;
 
 	float extra = e * l - h * i;
-	float gamma = ( a * n + d * q + c * extra) / denominator;
+	float gamma = ( a * n + d * q + c * extra) / denom;
 
 	if (gamma < 0.0f) return false;
 
 	if (beta + gamma > 1.0f) return false;
 
-	t = (a * p - b * extra + d * s) / denominator;
+	t = (a * p - b * extra + d * s) / denom;
 
 	return (true);
 }
