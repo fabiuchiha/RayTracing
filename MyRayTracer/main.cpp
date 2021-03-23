@@ -149,7 +149,7 @@ Color rayTracing( Ray ray, int depth, float ior_1)  //index of refraction of med
 		Color reflection;
 		float fresneleffect;
 		bool inside = false;
-		if (hit_obj->GetMaterial()->GetReflection() > 0 && depth < MAX_DEPTH) {
+		if (hit_obj->GetMaterial()->GetReflection() > 0) {
 			if (ray.direction * hit_normal > 0) hit_normal = -hit_normal, inside = true;
 			float facingratio = -ray.direction * hit_normal;
 			// change the mix value to tweak the effect
@@ -164,7 +164,7 @@ Color rayTracing( Ray ray, int depth, float ior_1)  //index of refraction of med
 
 		// calculate refraction
 		Color refraction;
-		if (hit_obj->GetMaterial()->GetTransmittance() > 0 && depth < MAX_DEPTH) {
+		if (hit_obj->GetMaterial()->GetTransmittance() > 0) {
 			// if the sphere is also transparent compute refraction ray (transmission)
 			float eta = (inside) ? hit_obj->GetMaterial()->GetRefrIndex() : 1 / hit_obj->GetMaterial()->GetRefrIndex(); // are we inside or outside the surface? 
 			float cosi = -hit_normal * ray.direction;
