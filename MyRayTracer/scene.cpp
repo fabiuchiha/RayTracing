@@ -67,6 +67,8 @@ bool Triangle::intercepts(Ray& r, float& t ) {
 
 	t = (a * p - b * extra + d * s) / denom;
 
+	if (t < 0) return false;
+
 	return (true);
 }
 
