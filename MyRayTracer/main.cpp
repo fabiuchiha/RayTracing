@@ -126,57 +126,56 @@ Color rayTracing( Ray ray, int depth, float ior_1)  //index of refraction of med
 		//c = hit_obj->GetMaterial()->GetDiffColor();
 		Color c;
 
-		// calculate reflection and refraction
-		if (hit_obj->GetMaterial()->GetTransmittance() > 0 && depth < MAX_DEPTH) {
-			//cout << "Heyyyy \n";
-			bool inside = false;
-			if (ray.direction*hit_normal > 0) hit_normal = -hit_normal, inside = true;
-			float facingratio = -ray.direction*hit_normal;
+		//for each light source
+		for (int l = 0; l < scene->getNumLights(); l++) {
+			Light* source_light = scene->getLight(l);
+			Vector L = (source_light->position - intercept_point).normalize();
+			//Vector refection_vector =  hit_normal * (2 * (L * hit_normal)) - L;
+			Vector halfway_vector = (L - ray.direction).normalize();
+
+			if (L * hit_normal > 0) {
+				//diffiuse component
+				if (!isShadowed(intercept_point, L, hit_normal)) {
+					c += source_light->color * hit_obj->GetMaterial()->GetDiffuse() * max(hit_normal * L, 0.0f) * hit_obj->GetMaterial()->GetDiffColor();
+
+					//specular component
+					c += source_light->color * hit_obj->GetMaterial()->GetSpecular() * pow(max(halfway_vector * hit_normal, 0.0f), hit_obj->GetMaterial()->GetShine()) * hit_obj->GetMaterial()->GetSpecColor();
+				}
+			}
+		}
+		if (depth >= MAX_DEPTH) return c;
+
+		// calculate reflection
+		Color reflection;
+		float fresneleffect;
+		bool inside = false;
+		if (hit_obj->GetMaterial()->GetReflection() > 0 && depth < MAX_DEPTH) {
+			if (ray.direction * hit_normal > 0) hit_normal = -hit_normal, inside = true;
+			float facingratio = -ray.direction * hit_normal;
 			// change the mix value to tweak the effect
-			float fresneleffect = mix(pow(1 - facingratio, 3), 1, 0.1);
+			fresneleffect = mix(pow(1 - facingratio, 3), 1, 0.1);
 			// compute reflection direction (not need to normalize because all vectors
 			// are already normalized)
-			Vector refldir = ray.direction - hit_normal * 2 * (ray.direction*hit_normal);
+			Vector refldir = ray.direction - hit_normal * 2 * (ray.direction * hit_normal);
 			refldir.normalize();
 			Ray reflectionRay = Ray(intercept_point + hit_normal * bias, refldir);
-			Color reflection = rayTracing(reflectionRay, depth + 1, 1);
-			Color refraction;
+			reflection = rayTracing(reflectionRay, depth + 1, hit_obj->GetMaterial()->GetRefrIndex());
+		}
+
+		// calculate refraction
+		Color refraction;
+		if (hit_obj->GetMaterial()->GetTransmittance() > 0 && depth < MAX_DEPTH) {
 			// if the sphere is also transparent compute refraction ray (transmission)
-			float ior = 1.1, eta = (inside) ? ior : 1 / ior; // are we inside or outside the surface? 
-			float cosi = -hit_normal*ray.direction;
+			float eta = (inside) ? hit_obj->GetMaterial()->GetRefrIndex() : 1 / hit_obj->GetMaterial()->GetRefrIndex(); // are we inside or outside the surface? 
+			float cosi = -hit_normal * ray.direction;
 			float k = 1 - eta * eta * (1 - cosi * cosi);
 			Vector refrdir = ray.direction * eta + hit_normal * (eta * cosi - sqrt(k));
 			refrdir.normalize();
 			Ray refractionRay = Ray(hit_normal - hit_normal * bias, refrdir);
-			refraction = rayTracing(refractionRay, depth + 1, 1);
-			
-			// the result is a mix of reflection and refraction (if the sphere is transparent)
-			c = (
-				reflection * fresneleffect +
-				refraction * (1 - fresneleffect) * hit_obj->GetMaterial()->GetTransmittance()) * hit_obj->GetMaterial()->GetDiffColor();
+			refraction = rayTracing(refractionRay, depth + 1, hit_obj->GetMaterial()->GetRefrIndex());
 		}
-		// calculate opaque objects color
-		else {
-			//for each light source
-			for (int l = 0; l < scene->getNumLights(); l++) {
-				Light* source_light = scene->getLight(l);
-				Vector L = (source_light->position - intercept_point).normalize();
-				//Vector refection_vector =  hit_normal * (2 * (L * hit_normal)) - L;
-				Vector halfway_vector = (L - ray.direction).normalize();
-
-				if (L * hit_normal > 0) {
-					//diffiuse component
-					if (!isShadowed(intercept_point, L, hit_normal)) {
-						c += source_light->color * hit_obj->GetMaterial()->GetDiffuse() * max(hit_normal * L, 0.0f) * hit_obj->GetMaterial()->GetDiffColor();
-
-						//specular component
-						c += source_light->color * hit_obj->GetMaterial()->GetSpecular() * pow(max(halfway_vector * hit_normal, 0.0f), hit_obj->GetMaterial()->GetShine()) * hit_obj->GetMaterial()->GetSpecColor();
-					}
-				}
-
-			}
-		}
-		if (depth >= MAX_DEPTH) return c;
+		// the result is a mix of reflection and refraction (if the sphere is transparent)
+		c = (reflection * fresneleffect + refraction * (1 - fresneleffect) * hit_obj->GetMaterial()->GetTransmittance()) + c;
 		return c;
 	}
 }
