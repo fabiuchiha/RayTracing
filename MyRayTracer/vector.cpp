@@ -39,6 +39,11 @@ Vector Vector::operator-(const Vector& v )
 	return Vector( x - v.x, y - v.y, z - v.z );
 }
 
+Vector Vector::operator-()
+{
+	return Vector(-x, -y, -z);
+}
+
 
 Vector Vector::operator*( float f )
 {
