@@ -367,7 +367,13 @@ void renderScene()
 	int index_pos=0;
 	int index_col=0;
 	unsigned int counter = 0;
+
+	// square root of number of samples per pixel
 	int n_samples = 4;
+
+	// 0 to regular
+	// 1 to random
+	int sampler_type = 1;
 
 	if (drawModeEnabled) {
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -382,15 +388,32 @@ void renderScene()
 
 			Vector pixel;  //viewport coordinates
 
-			for (int p = 0; p < n_samples; p++) {
-				for (int q = 0; q < n_samples; q++) {
-					pixel.x = x + (p + 0.5f) / n_samples;
-					pixel.y = y + (q + 0.5f) / n_samples;
+			if (sampler_type == 0) {
+				for (int p = 0; p < n_samples; p++) {
+					for (int q = 0; q < n_samples; q++) {
+						pixel.x = x + (p + 0.5f) / n_samples;
+						pixel.y = y + (q + 0.5f) / n_samples;
 
-					Ray ray = scene->GetCamera()->PrimaryRay(pixel);
-					color += rayTracing(ray, 1, 1.0).clamp();
+						Ray ray = scene->GetCamera()->PrimaryRay(pixel);
+						color += rayTracing(ray, 1, 1.0).clamp();
+					}
 				}
 			}
+
+			if (sampler_type == 1) {
+				for (int p = 0; p < n_samples; p++) {
+					for (int q = 0; q < n_samples; q++) {
+						double r = ((double)rand() / (RAND_MAX));
+						pixel.x = x + (p + r) / n_samples;
+						pixel.y = y + (p + r) / n_samples;
+
+						Ray ray = scene->GetCamera()->PrimaryRay(pixel);
+						color += rayTracing(ray, 1, 1.0).clamp();
+					}
+				}
+
+			}
+
 			color = color * (1 / pow(n_samples, 2));
 
 			img_Data[counter++] = u8fromfloat((float)color.r());
