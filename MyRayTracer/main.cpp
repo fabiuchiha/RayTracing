@@ -367,7 +367,7 @@ void renderScene()
 	int index_pos=0;
 	int index_col=0;
 	unsigned int counter = 0;
-	int n_samples = 1;
+	int n_samples = 4;
 
 	if (drawModeEnabled) {
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -383,7 +383,7 @@ void renderScene()
 			Vector pixel;  //viewport coordinates
 
 			for (int p = 0; p < n_samples; p++) {
-				for (int q = 0; q < n_samples; p++) {
+				for (int q = 0; q < n_samples; q++) {
 					pixel.x = x + (p + 0.5f) / n_samples;
 					pixel.y = y + (q + 0.5f) / n_samples;
 
