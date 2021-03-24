@@ -143,6 +143,7 @@ public:
 	AABB GetBoundingBox(void);
 	bool intercepts(Ray& r, float& t);
 	Vector getNormal(Vector point);
+	Vector getFaceNormal(int face_hit);
 
 private:
 	Vector min;

@@ -183,9 +183,106 @@ AABB aaBox::GetBoundingBox() {
 	return(AABB(min, max));
 }
 
-bool aaBox::intercepts(Ray& ray, float& t)
+bool aaBox::intercepts(Ray& r, float& t)
 {
+	float ox = r.origin.x, oy = r.origin.y, oz = r.origin.z;
+	float dx = r.direction.x, dy = r.direction.y, dz = r.direction.z;
+
+	float tx_min, ty_min, tz_min;
+	float tx_max, ty_max, tz_max;
+
+	float a = 1.0 / dx;
+	if (a >= 0) {
+		tx_min = (min.x - ox) * a;
+		tx_max = (max.x - ox) * a;
+	}
+	else {
+		tx_min = (max.x - ox) * a;
+		tx_max = (min.x - ox) * a;
+	}
+
+	float b = 1.0 / dy;
+	if (b >= 0) {
+		ty_min = (min.y - oy) * b;
+		ty_max = (max.y - oy) * b;
+	}
+	else {
+		ty_min = (max.y - oy) * b;
+		ty_max = (min.y - oy) * b;
+	}
+
+	float c = 1.0 / dz;
+	if (c >= 0) {
+		tz_min = (min.z - oz) * c;
+		tz_max = (max.z - oz) * c;
+	}
+	else {
+		tz_min = (max.z - oz) * c;
+		tz_max = (min.z - oz) * c;
+	}
+
+	float t0, t1;
+	int face_in, face_out;
+
+	// find largest entering t value
+	if (tx_min > ty_min) {
+		t0 = tx_min;
+		face_in = (a >= 0.0) ? 0 : 3;
+	}
+	else {
+		t0 = ty_min;
+		face_in = (b >= 0.0) ? 1 : 4;
+	}
+
+	if (tz_min > t0) {
+		t0 = tz_min;
+		face_in = (c >= 0.0) ? 2 : 5;
+	}
+
+	// find smallest exiting t value
+
+	if (tx_max < ty_max) {
+		t1 = tx_max;
+		face_out = (a >= 0.0) ? 3 : 0;
+	}
+	else {
+		t1 = ty_max;
+		face_out = (b >= 0.0) ? 4 : 1;
+	}
+
+	if (tz_max < t1) {
+		t1 = tz_max;
+		face_out = (c >= 0.0) ? 5 : 2;
+	}
+
+	if (t0 < t1 && t1 > 0.0) {
+		if (t0 > 0) {
+			t = t0;
+			Normal = getFaceNormal(face_in);
+		}
+		else {
+			t = t1;
+			Normal = getFaceNormal(face_out);
+		}
+		return(true);
+	}
+	else {
 		return (false);
+	}
+}
+
+Vector aaBox::getFaceNormal(int face_hit) {
+	switch (face_hit)
+	{
+	case 0: return (Vector(-1, 0, 0)); //-x face
+	case 1: return (Vector(0, -1, 0)); //-y face
+	case 2: return (Vector(0, 0, -1)); //-z face
+	case 3: return (Vector(1, 0, 0));  //+x face
+	case 4: return (Vector(0, 1, 0));  //+y face
+	case 5: return (Vector(0, 0, 1));  //+z face
+	default:
+		break;
+	}
 }
 
 Vector aaBox::getNormal(Vector point)

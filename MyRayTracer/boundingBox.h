@@ -14,4 +14,6 @@ public:
 	AABB operator= (const AABB& rhs);
 	
 	bool isInside(const Vector& p);
+	bool intercepts(Ray& r, float& dist);
+
 };
