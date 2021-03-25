@@ -35,6 +35,3 @@ all: $(OBJECTS)
 clean:
 	rm -rf obj/*
 	rm -f $(TARGET)
-
-test: all
-	cd MyRayTracer; echo "balls_low.p3f" | ../main
