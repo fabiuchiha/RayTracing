@@ -40,11 +40,26 @@
 
 unsigned int FrameCount = 0;
 
+// sampling settings
+// square root of number of samples per pixel
+int n_samples = 4;
+
+// 0 to regular
+// 1 to random
+int sampler_type = 1;
+
+
 // light parameters for soft shadows
 // lights are modeled as an axis aligned rectangle, with the point in the middle.
 // lightSize is the length of the sides.
+#define SHADOW_MODE_HARD 1
+#define SHADOW_MODE_WITH_ANTI_ALIASING 2
+#define SHADOW_MODE_WITHOUT_ANTI_ALIASING 3
+
 float lightSize = 0.05f;
 int shadowSeed = 42;
+int shadowMode = SHADOW_MODE_WITH_ANTI_ALIASING;
+size_t numShadowRays = 16;
 std::default_random_engine shadowPrng(shadowSeed);
 
 // Current Camera Position
@@ -93,18 +108,35 @@ int WindowHandle = 0;
 
 float bias = 0.005f;
 
-bool isShadowed(Vector interceptPoint, Vector lightPosition, Vector hitNormal) {
+// returns 0.0f for full shadow and 1.0 for full light.
+float lightPercentage(Vector interceptPoint, Vector lightPosition, Vector hitNormal) {
 	static std::uniform_real_distribution<> shadowDis(-0.5f, 0.5f);
-	float offset = shadowDis(shadowPrng);
-	Vector shadow_light_position = lightPosition + Vector(1, 1, 0) * (offset * lightSize * 2);
-	Vector lightDir = (shadow_light_position - interceptPoint).normalize();
-	Ray shadowRay = Ray((interceptPoint + hitNormal*bias), lightDir);
-	for (int i = 0; i < scene->getNumObjects(); i++) {
-		Object* obj = scene->getObject(i);
-		float d;
-		if (obj->intercepts(shadowRay, d)) return true;
+
+	size_t num_shadow_rays = shadowMode == SHADOW_MODE_WITHOUT_ANTI_ALIASING ? numShadowRays : 1;
+
+	// shoot several shadow rays
+	float percentage = 0.0f;
+	for (size_t i = 0; i < num_shadow_rays; i++) {
+		float offset = shadowMode == SHADOW_MODE_HARD ? 0.0f : shadowDis(shadowPrng);
+		Vector shadow_light_position = lightPosition + Vector(1, 1, 0) * (offset * lightSize * 2);
+		Vector lightDir = (shadow_light_position - interceptPoint).normalize();
+		Ray shadowRay = Ray((interceptPoint + hitNormal*bias), lightDir);
+		bool interception = false;
+		for (int i = 0; i < scene->getNumObjects(); i++) {
+			Object* obj = scene->getObject(i);
+			float d;
+			if (obj->intercepts(shadowRay, d)) {
+				interception = true;
+				break;
+			}
+		}
+
+		if (!interception) {
+			percentage += 1.0f;
+		}
 	}
-	return false;
+
+	return percentage / (float)num_shadow_rays;
 }
 
 float mix(const float& a, const float& b, const float& mix) {
@@ -141,12 +173,12 @@ Color rayTracing( Ray ray, int depth, float ior_1) {
 			Vector halfway_vector = (L - ray.direction).normalize();
 
 			if (L * hit_normal > 0) {
-				if (!isShadowed(intercept_point, source_light->position, hit_normal)) {
-					//diffiuse component
-					c += source_light->color * hit_obj->GetMaterial()->GetDiffuse() * max(hit_normal * L, 0.0f) * hit_obj->GetMaterial()->GetDiffColor();
-					//specular component
-					c += source_light->color * hit_obj->GetMaterial()->GetSpecular() * pow(max(halfway_vector * hit_normal, 0.0f), hit_obj->GetMaterial()->GetShine()) * hit_obj->GetMaterial()->GetSpecColor();
-				}
+				//diffiuse component
+				Color c_buf = source_light->color * hit_obj->GetMaterial()->GetDiffuse() * max(hit_normal * L, 0.0f) * hit_obj->GetMaterial()->GetDiffColor();
+				//specular component
+				c_buf += source_light->color * hit_obj->GetMaterial()->GetSpecular() * pow(max(halfway_vector * hit_normal, 0.0f), hit_obj->GetMaterial()->GetShine()) * hit_obj->GetMaterial()->GetSpecColor();
+				c_buf *= lightPercentage(intercept_point, source_light->position, hit_normal);
+				c += c_buf;
 			}
 		}
 		if (depth >= MAX_DEPTH) return c;
@@ -379,13 +411,6 @@ void renderScene()
 	int index_pos=0;
 	int index_col=0;
 	unsigned int counter = 0;
-
-	// square root of number of samples per pixel
-	int n_samples = 4;
-
-	// 0 to regular
-	// 1 to random
-	int sampler_type = 1;
 
 	if (drawModeEnabled) {
 		glClear(GL_COLOR_BUFFER_BIT);
