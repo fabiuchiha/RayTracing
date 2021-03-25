@@ -20,6 +20,7 @@
 #include <chrono>
 #include <conio.h>
 #include <limits>
+#include <random>
 
 #include <GL/glew.h>
 #include <GL/freeglut.h>
@@ -43,6 +44,8 @@ unsigned int FrameCount = 0;
 // lights are modeled as an axis aligned rectangle, with the point in the middle.
 // lightSize is the length of the sides.
 float lightSize = 0.05f;
+int shadowSeed = 42;
+std::default_random_engine shadowPrng(shadowSeed);
 
 // Current Camera Position
 float camX, camY, camZ;
@@ -91,7 +94,9 @@ int WindowHandle = 0;
 float bias = 0.005f;
 
 bool isShadowed(Vector interceptPoint, Vector lightPosition, Vector hitNormal) {
-	Vector shadow_light_position = lightPosition + Vector(1, 1, 0) * (rand_float() - 0.5)*lightSize*2;
+	static std::uniform_real_distribution<> shadowDis(-0.5f, 0.5f);
+	float offset = shadowDis(shadowPrng);
+	Vector shadow_light_position = lightPosition + Vector(1, 1, 0) * (offset * lightSize * 2);
 	Vector lightDir = (shadow_light_position - interceptPoint).normalize();
 	Ray shadowRay = Ray((interceptPoint + hitNormal*bias), lightDir);
 	for (int i = 0; i < scene->getNumObjects(); i++) {
@@ -380,6 +385,8 @@ void renderScene()
 		scene->GetCamera()->SetEye(Vector(camX, camY, camZ));  //Camera motion
 	}
 	
+	shadowPrng.seed(shadowSeed);
+
 	for (int y = 0; y < RES_Y; y++)
 	{
 		for (int x = 0; x < RES_X; x++)
