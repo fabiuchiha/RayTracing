@@ -39,6 +39,11 @@
 
 unsigned int FrameCount = 0;
 
+// light parameters for soft shadows
+// lights are modeled as an axis aligned rectangle, with the point in the middle.
+// lightSize is the length of the sides.
+float lightSize = 0.05f;
+
 // Current Camera Position
 float camX, camY, camZ;
 
@@ -85,7 +90,9 @@ int WindowHandle = 0;
 
 float bias = 0.005f;
 
-bool isShadowed(Vector interceptPoint, Vector lightDir, Vector hitNormal) {
+bool isShadowed(Vector interceptPoint, Vector lightPosition, Vector hitNormal) {
+	Vector shadow_light_position = lightPosition + Vector(1, 1, 0) * (rand_float() - 0.5)*lightSize*2;
+	Vector lightDir = (shadow_light_position - interceptPoint).normalize();
 	Ray shadowRay = Ray((interceptPoint + hitNormal*bias), lightDir);
 	for (int i = 0; i < scene->getNumObjects(); i++) {
 		Object* obj = scene->getObject(i);
@@ -129,7 +136,7 @@ Color rayTracing( Ray ray, int depth, float ior_1) {
 			Vector halfway_vector = (L - ray.direction).normalize();
 
 			if (L * hit_normal > 0) {
-				if (!isShadowed(intercept_point, L, hit_normal)) {
+				if (!isShadowed(intercept_point, source_light->position, hit_normal)) {
 					//diffiuse component
 					c += source_light->color * hit_obj->GetMaterial()->GetDiffuse() * max(hit_normal * L, 0.0f) * hit_obj->GetMaterial()->GetDiffColor();
 					//specular component
