@@ -109,7 +109,7 @@ int WindowHandle = 0;
 float bias = 0.005f;
 
 // returns 0.0f for full shadow and 1.0 for full light.
-float lightPercentage(Vector interceptPoint, Vector lightPosition, Vector hitNormal) {
+float lightPercentage (Vector interceptPoint, Vector lightPosition, Vector hitNormal) {
 	static std::uniform_real_distribution<> shadowDis(-0.5f, 0.5f);
 
 	size_t num_shadow_rays = shadowMode == SHADOW_MODE_WITHOUT_ANTI_ALIASING ? numShadowRays : 1;
@@ -139,12 +139,45 @@ float lightPercentage(Vector interceptPoint, Vector lightPosition, Vector hitNor
 	return percentage / (float)num_shadow_rays;
 }
 
-float mix(const float& a, const float& b, const float& mix) {
+float mix (const float& a, const float& b, const float& mix) {
 	return b * mix + a * (1 - mix);
 }
 
+Vector reflectDir (Vector& I, Vector& N) {
+	return I - N * 2 * (I*N);
+}
 
-Color rayTracing( Ray ray, int depth, float ior_1) {
+Vector refractDir (Vector& I, Vector& N, float& ior) {
+	float cosi = clamp(-1, 1, I*N);
+	float etai = 1, etat = ior;
+	Vector n = N;
+	if (cosi < 0) { cosi = -cosi; }
+	else { std::swap(etai, etat); n = -N; }
+	float eta = etai / etat;
+	float k = 1 - eta * eta * (1 - cosi * cosi);
+	if (k < 0) return Vector();
+	else return (I * eta) + (n * (eta * cosi - sqrtf(k)));
+}
+
+void fresnel (Vector& I, Vector& N, const float& ior, float& kr) {
+	float cosi = clamp(-1, 1, I*N);
+	float etai = 1, etat = ior;
+	if (cosi > 0) { std::swap(etai, etat); }
+	// Compute sini using Snell's law
+	float sint = etai / etat * sqrtf(std::max(0.f, 1 - cosi * cosi));
+	// Total internal reflection
+	if (sint >= 1) kr = 1;
+	else {
+		float cost = sqrtf(std::max(0.f, 1 - sint * sint));
+		cosi = fabsf(cosi);
+		float Rs = ((etat * cosi) - (etai * cost)) / ((etat * cosi) + (etai * cost));
+		float Rp = ((etai * cosi) - (etat * cost)) / ((etai * cosi) + (etat * cost));
+		kr = (Rs * Rs + Rp * Rp) / 2;
+	}
+}
+
+
+Color rayTracing (Ray ray, int depth, float ior_1) {
 	// intersect ray with all objects and find closest intersection
 	float closest_d = std::numeric_limits<float>::max();
 	Object* hit_obj = NULL;
@@ -185,35 +218,36 @@ Color rayTracing( Ray ray, int depth, float ior_1) {
 
 		// calculate reflection
 		Color reflection;
-		float fresneleffect = 0.0f;
-		bool inside = false;
-		if (ray.direction * hit_normal > 0) hit_normal = -hit_normal, inside = true;
+		float ior = hit_obj->GetMaterial()->GetRefrIndex();
+		bool outside = ray.direction * hit_normal < 0;
 		if (hit_obj->GetMaterial()->GetReflection() > 0) {
-			float facingratio = -ray.direction * hit_normal;
-			// change the mix value to tweak the effect
-			fresneleffect = mix(pow(1 - facingratio, 3), 1, 0.1);
 			// compute reflection direction
-			Vector refldir = ray.direction - hit_normal * 2 * (ray.direction * hit_normal);
-			refldir.normalize();
+			Vector reflDir = reflectDir(ray.direction, hit_normal).normalize();
 			// compute reflection ray
-			Ray reflectionRay = Ray(intercept_point + hit_normal * bias, refldir);
-			reflection = rayTracing(reflectionRay, depth + 1, hit_obj->GetMaterial()->GetRefrIndex());
+			Vector reflOrig = outside ? intercept_point + hit_normal * bias : intercept_point - hit_normal * bias;
+			Ray reflectionRay = Ray(reflOrig, reflDir);
+			reflection = rayTracing(reflectionRay, depth + 1, ior);
 		}
 
 		// calculate refraction
-		Color refraction;
 		if (hit_obj->GetMaterial()->GetTransmittance() > 0) {
+			//calculate fresnel
+			float kr;
+			fresnel(ray.direction, hit_normal, ior, kr);
 			// compute refraction ray (transmission)
-			float eta = (inside) ? hit_obj->GetMaterial()->GetRefrIndex() : 1 / hit_obj->GetMaterial()->GetRefrIndex(); // are we inside or outside the surface? 
-			float cosi = -hit_normal * ray.direction;
-			float k = 1 - eta * eta * (1 - cosi * cosi);
-			Vector refrdir = ray.direction * eta + hit_normal * (eta * cosi - sqrt(k));
-			refrdir.normalize();
-			Ray refractionRay = Ray(hit_normal - hit_normal * bias, refrdir);
-			refraction = rayTracing(refractionRay, depth + 1, hit_obj->GetMaterial()->GetRefrIndex());
+			Color refraction;
+			if (kr < 1) {
+				Vector refrDir = refractDir(ray.direction, hit_normal, ior).normalize();
+				Vector refrOrig = outside ? intercept_point - hit_normal * bias : intercept_point + hit_normal * bias;
+				Ray refractionRay = Ray(refrOrig, refrDir);
+				refraction = rayTracing(refractionRay, depth + 1, ior);
+			}
+			//calculate mix result of reflection and refraction
+			c += (reflection * kr) + (refraction * (1 - kr));
 		}
-		// the result is a mix of reflection and refraction (if the sphere is transparent)
-		c = (reflection * fresneleffect + refraction * (1 - fresneleffect) * hit_obj->GetMaterial()->GetTransmittance()) + c;
+		else 
+			c += reflection * hit_obj->GetMaterial()->GetSpecular();
+
 		return c;
 	}
 }
