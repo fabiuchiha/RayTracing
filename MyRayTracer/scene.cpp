@@ -258,11 +258,11 @@ bool aaBox::intercepts(Ray& r, float& t)
 	if (t0 < t1 && t1 > 0.0) {
 		if (t0 > 0) {
 			t = t0;
-			Normal = getFaceNormal(face_in);
+			//Normal = getFaceNormal(face_in);
 		}
 		else {
 			t = t1;
-			Normal = getFaceNormal(face_out);
+			//Normal = getFaceNormal(face_out);
 		}
 		return(true);
 	}
@@ -280,14 +280,34 @@ Vector aaBox::getFaceNormal(int face_hit) {
 	case 3: return (Vector(1, 0, 0));  //+x face
 	case 4: return (Vector(0, 1, 0));  //+y face
 	case 5: return (Vector(0, 0, 1));  //+z face
-	default:
-		break;
+	default: break;
 	}
 }
 
 Vector aaBox::getNormal(Vector point)
 {
-	return Normal;
+	
+	if (point.x >= max.x) {
+		return getFaceNormal(3);
+	}
+	if (point.x <= min.x) {
+		return getFaceNormal(0);
+	}
+	if (point.y >= max.y) {
+		return getFaceNormal(4);
+	}
+	if (point.y <= min.y) {
+		return getFaceNormal(1);
+	}
+	if (point.z >= max.z) {
+		return getFaceNormal(5);
+	}
+	if (point.z <= min.z) {
+		return getFaceNormal(2);
+	}
+	
+	//return Normal;
+	//return getFaceNormal(face_hit);
 }
 
 Scene::Scene()
