@@ -67,7 +67,7 @@ bool Triangle::intercepts(Ray& r, float& t ) {
 
 	t = (a * p - b * extra + d * s) / denom;
 
-	if (t < 0) return false;
+	if (t < EPSILON) return false;
 
 	return (true);
 }
@@ -255,14 +255,12 @@ bool aaBox::intercepts(Ray& r, float& t)
 		face_out = (c >= 0.0) ? 5 : 2;
 	}
 
-	if (t0 < t1 && t1 > 0.0) {
+	if (t0 < t1 && t1 > EPSILON) {
 		if (t0 > 0) {
 			t = t0;
-			//Normal = getFaceNormal(face_in);
 		}
 		else {
 			t = t1;
-			//Normal = getFaceNormal(face_out);
 		}
 		return(true);
 	}
@@ -287,27 +285,27 @@ Vector aaBox::getFaceNormal(int face_hit) {
 Vector aaBox::getNormal(Vector point)
 {
 	
-	if (point.x >= max.x) {
-		return getFaceNormal(3);
-	}
-	if (point.x <= min.x) {
+	if (abs(point.x - min.x) < EPSILON) {
 		return getFaceNormal(0);
 	}
-	if (point.y >= max.y) {
-		return getFaceNormal(4);
+	else if (abs(point.x - max.x) < EPSILON) {
+		return getFaceNormal(3);
 	}
-	if (point.y <= min.y) {
+	else if (abs(point.y - min.y) < EPSILON) {
 		return getFaceNormal(1);
 	}
-	if (point.z >= max.z) {
-		return getFaceNormal(5);
+	else if (abs(point.y - max.y) < EPSILON) {
+		return getFaceNormal(4);
 	}
-	if (point.z <= min.z) {
+	else if (abs(point.z - min.z) < EPSILON) {
 		return getFaceNormal(2);
 	}
+	else if (abs(point.z - max.z) < EPSILON) {
+		return getFaceNormal(5);
+	}
+	
 	
 	//return Normal;
-	//return getFaceNormal(face_hit);
 }
 
 Scene::Scene()
