@@ -478,10 +478,19 @@ void renderScene()
 					for (int q = 0; q < n_samples; q++) {
 						double r = ((double)rand() / (RAND_MAX));
 						pixel.x = x + (p + r) / n_samples;
-						pixel.y = y + (p + r) / n_samples;
+						pixel.y = y + (q + r) / n_samples;
 
-						Ray ray = scene->GetCamera()->PrimaryRay(pixel);
-						color += rayTracing(ray, 1, 1.0).clamp();
+						Ray centerRay = scene->GetCamera()->PrimaryRay(pixel);
+						
+						Vector focalPoint = centerRay.direction * scene->GetCamera()->GetFocal();
+						float du = rand() / float(RAND_MAX + 1);
+						float dv = rand() / float(RAND_MAX + 1);
+						Vector lensSample;
+						lensSample.x = scene->GetCamera()->GetEye().x + (p + r) / n_samples;
+						lensSample.y = scene->GetCamera()->GetEye().y + (q + r) / n_samples;
+						Ray sampledRay = scene->GetCamera()->PrimaryRay(lensSample, focalPoint);
+
+						color += rayTracing(sampledRay, 1, 1.0).clamp();
 					}
 				}
 
