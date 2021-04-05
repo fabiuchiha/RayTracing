@@ -245,7 +245,7 @@ Color rayTracing (Ray ray, int depth, float ior_1) {
 			//calculate mix result of reflection and refraction
 			c += (reflection * kr) + (refraction * (1 - kr));
 		}
-		else 
+		else if (hit_obj->GetMaterial()->GetReflection() > 0)
 			c += reflection * hit_obj->GetMaterial()->GetSpecular();
 
 		return c;
