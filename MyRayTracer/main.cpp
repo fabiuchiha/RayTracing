@@ -48,6 +48,7 @@ int n_samples = 4;
 // 1 to random
 int sampler_type = 1;
 
+int focalDistance = 15;
 
 // light parameters for soft shadows
 // lights are modeled as an axis aligned rectangle, with the point in the middle.
@@ -479,15 +480,20 @@ void renderScene()
 						double r = ((double)rand() / (RAND_MAX));
 						pixel.x = x + (p + r) / n_samples;
 						pixel.y = y + (q + r) / n_samples;
+						pixel.z = -scene->GetCamera()->GetPlaneDist();
 
 						Ray centerRay = scene->GetCamera()->PrimaryRay(pixel);
 						
-						Vector focalPoint = centerRay.direction * scene->GetCamera()->GetFocal();
-						float du = rand() / float(RAND_MAX + 1);
-						float dv = rand() / float(RAND_MAX + 1);
+						double r2 = ((double)rand() / (RAND_MAX));
 						Vector lensSample;
-						lensSample.x = scene->GetCamera()->GetEye().x + (p + r) / n_samples;
-						lensSample.y = scene->GetCamera()->GetEye().y + (q + r) / n_samples;
+						lensSample.x = scene->GetCamera()->GetEye().x + (r2 * scene->GetCamera()->GetAperture());
+						lensSample.y = scene->GetCamera()->GetEye().y + (r2 * scene->GetCamera()->GetAperture());
+
+						Vector focalPoint;
+						focalPoint.x = pixel.x * (focalDistance / scene->GetCamera()->GetPlaneDist());
+						focalPoint.y = pixel.y * (focalDistance / scene->GetCamera()->GetPlaneDist());
+						focalPoint.z = -focalDistance;
+
 						Ray sampledRay = scene->GetCamera()->PrimaryRay(lensSample, focalPoint);
 
 						color += rayTracing(sampledRay, 1, 1.0).clamp();

@@ -29,7 +29,6 @@ public:
 	float GetPlaneDist() { return plane_dist; }
 	float GetFar() {return vfar; }
 	float GetAperture() { return aperture; }
-	float GetFocal() { return focal_ratio; }
 
     Camera( Vector from, Vector At, Vector Up, float angle, float hither, float yon, int ResX, int ResY, float Aperture_ratio, float Focal_ratio) {
 	    eye = from;
@@ -80,7 +79,7 @@ public:
 
 	Ray PrimaryRay(const Vector& lens_sample, const Vector& pixel_sample) { // DOF: Rays cast from  a thin lens sample to a pixel sample
 
-		Vector ray_dir = (u*(pixel_sample.x - lens_sample.x) + v*(pixel_sample.y - lens_sample.y) - n*focal_ratio).normalize();
+		Vector ray_dir = (u*(pixel_sample.x - lens_sample.x) + v*(pixel_sample.y - lens_sample.y) + n*pixel_sample.z).normalize();
 		Vector eye_offset = eye + u*lens_sample.x + v*lens_sample.y;
 
 		return Ray(eye_offset, ray_dir);
