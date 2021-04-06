@@ -151,7 +151,9 @@ Vector refractDir (Vector& I, Vector& N, float& ior) {
 	float cosi = clamp(-1, 1, I*N);
 	float etai = 1, etat = ior;
 	Vector n = N;
+	//ray hits from outside
 	if (cosi < 0) { cosi = -cosi; }
+	//ray hits from outside, swap eta and invert normal
 	else { std::swap(etai, etat); n = -N; }
 	float eta = etai / etat;
 	float k = 1 - eta * eta * (1 - cosi * cosi);
@@ -226,27 +228,30 @@ Color rayTracing (Ray ray, int depth, float ior_1) {
 			// compute reflection ray
 			Vector reflOrig = outside ? intercept_point + hit_normal * bias : intercept_point - hit_normal * bias;
 			Ray reflectionRay = Ray(reflOrig, reflDir);
-			reflection = rayTracing(reflectionRay, depth + 1, ior);
+			reflection = rayTracing(reflectionRay, depth + 1, 1.0f);
+			reflection *= hit_obj->GetMaterial()->GetSpecular();
 		}
 
 		// calculate refraction
+		float kr;
+		Color refraction;
 		if (hit_obj->GetMaterial()->GetTransmittance() > 0) {
 			//calculate fresnel
-			float kr;
 			fresnel(ray.direction, hit_normal, ior, kr);
 			// compute refraction ray (transmission)
-			Color refraction;
 			if (kr < 1) {
 				Vector refrDir = refractDir(ray.direction, hit_normal, ior).normalize();
 				Vector refrOrig = outside ? intercept_point - hit_normal * bias : intercept_point + hit_normal * bias;
 				Ray refractionRay = Ray(refrOrig, refrDir);
-				refraction = rayTracing(refractionRay, depth + 1, ior);
+				refraction = rayTracing(refractionRay, depth + 1, 1.0f);
 			}
-			//calculate mix result of reflection and refraction
-			c += (reflection * kr) + (refraction * (1 - kr));
 		}
-		else 
-			c += reflection * hit_obj->GetMaterial()->GetSpecular();
+
+		//calculate mix result of reflection and refraction
+		if (hit_obj->GetMaterial()->GetTransmittance() > 0) {
+			c += (reflection * kr) + (refraction * (1 - kr));
+		} else if (hit_obj->GetMaterial()->GetReflection() > 0)
+			c += reflection;
 
 		return c;
 	}
