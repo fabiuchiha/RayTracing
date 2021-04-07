@@ -481,7 +481,8 @@ void renderScene()
 			if (sampler_type == 1) {
 				for (int p = 0; p < n_samples; p++) {
 					for (int q = 0; q < n_samples; q++) {
-						double r = ((double)rand() / (RAND_MAX));
+						double r = rand_double();
+
 						pixel.x = x + (p + r) / n_samples;
 						pixel.y = y + (p + r) / n_samples;
 
