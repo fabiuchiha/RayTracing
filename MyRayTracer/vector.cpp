@@ -100,11 +100,11 @@ float Vector::getAxisValue(int dimension)
 {
 	switch (dimension)
 	{
-	case 1:
+	case 0:
 		return x;
-	case 2:
+	case 1:
 		return y;
-	case 3:
+	case 2:
 		return z;
 	default:
 		return 0.0f;
@@ -112,3 +112,4 @@ float Vector::getAxisValue(int dimension)
 
 	
 }
+
