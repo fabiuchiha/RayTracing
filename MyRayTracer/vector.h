@@ -27,6 +27,7 @@ public:
 	Vector&	operator-=	(const float v);
 	Vector&	operator*=	(const float v);
 	Vector&	operator+=	(const float v);
+	float getAxisValue(int dimension);
 
 	float x;
 	float y;
