@@ -40,6 +40,8 @@
 
 unsigned int FrameCount = 0;
 
+float bias = 0.001f;
+
 // sampling settings
 // square root of number of samples per pixel
 int n_samples = 4;
@@ -47,8 +49,6 @@ int n_samples = 4;
 // 0 to regular
 // 1 to random
 int sampler_type = 1;
-
-int focalDistance = 15;
 
 // light parameters for soft shadows
 // lights are modeled as an axis aligned rectangle, with the point in the middle.
@@ -59,7 +59,7 @@ int focalDistance = 15;
 
 float lightSize = 0.05f;
 int shadowMode = SHADOW_MODE_WITHOUT_ANTI_ALIASING;
-size_t numShadowRays = 1;
+size_t numShadowRays = 16;
 std::default_random_engine shadowPrng(time(NULL) * time(NULL));
 
 // Current Camera Position
@@ -80,7 +80,7 @@ long myTime, timebase = 0, frame = 0;
 char s[32];
 
 //Enable OpenGL drawing.  
-bool drawModeEnabled = true;
+bool drawModeEnabled = false;
 
 bool P3F_scene = true; //choose between P3F scene or a built-in random scene
 
@@ -105,8 +105,6 @@ Scene* scene = NULL;
 int RES_X, RES_Y;
 
 int WindowHandle = 0;
-
-float bias = 0.001f;
 
 // returns 0.0f for full shadow and 1.0 for full light.
 float lightPercentage (Vector interceptPoint, Vector lightPosition, Vector hitNormal) {
@@ -196,6 +194,7 @@ Color rayTracing (Ray ray, int depth, float ior_1) {
 	}
 	if (hit_obj == NULL) return scene->GetBackgroundColor();
 	else {
+		//cout << ray.direction.x << " " << ray.direction.y << " " << ray.direction.z << "\n";
 		//compute intercection point and hit normal
 		Vector intercept_point = ray.origin + ray.direction * closest_d;
 		Vector hit_normal = hit_obj->getNormal(intercept_point);
@@ -483,29 +482,22 @@ void renderScene()
 				for (int p = 0; p < n_samples; p++) {
 					for (int q = 0; q < n_samples; q++) {
 						double r = rand_double();
-
 						pixel.x = x + (p + r) / n_samples;
 						pixel.y = y + (q + r) / n_samples;
-						pixel.z = -scene->GetCamera()->GetPlaneDist();
 
-						Ray centerRay = scene->GetCamera()->PrimaryRay(pixel);
-						
-						double r2 = ((double)rand() / (RAND_MAX));
+						Vector samplePoint = sample_unit_disk();
 						Vector lensSample;
-						lensSample.x = scene->GetCamera()->GetEye().x + (r2 * scene->GetCamera()->GetAperture());
-						lensSample.y = scene->GetCamera()->GetEye().y + (r2 * scene->GetCamera()->GetAperture());
+						lensSample.x = samplePoint.x * scene->GetCamera()->GetAperture();
+						lensSample.y = samplePoint.y * scene->GetCamera()->GetAperture();
 
 						Vector focalPoint;
-						focalPoint.x = pixel.x * (focalDistance / scene->GetCamera()->GetPlaneDist());
-						focalPoint.y = pixel.y * (focalDistance / scene->GetCamera()->GetPlaneDist());
-						focalPoint.z = -focalDistance;
+						focalPoint.x = pixel.x * scene->GetCamera()->GetFocalRatio();
+						focalPoint.y = pixel.y * scene->GetCamera()->GetFocalRatio();
 
 						Ray sampledRay = scene->GetCamera()->PrimaryRay(lensSample, focalPoint);
-
 						color += rayTracing(sampledRay, 1, 1.0).clamp();
 					}
 				}
-
 			}
 
 			color = color * (1 / pow(n_samples, 2));
