@@ -95,3 +95,21 @@ Vector Vector::operator%( const Vector& v)
 
 	return Vector( sX, sY, sZ );
 }
+
+float Vector::getAxisValue(int dimension)
+{
+	switch (dimension)
+	{
+	case 0:
+		return x;
+	case 1:
+		return y;
+	case 2:
+		return z;
+	default:
+		return 0.0f;
+	}
+
+	
+}
+

@@ -58,10 +58,9 @@ int focalDistance = 15;
 #define SHADOW_MODE_WITHOUT_ANTI_ALIASING 3
 
 float lightSize = 0.05f;
-int shadowSeed = 42;
-int shadowMode = SHADOW_MODE_WITH_ANTI_ALIASING;
-size_t numShadowRays = 16;
-std::default_random_engine shadowPrng(shadowSeed);
+int shadowMode = SHADOW_MODE_WITHOUT_ANTI_ALIASING;
+size_t numShadowRays = 1;
+std::default_random_engine shadowPrng(time(NULL) * time(NULL));
 
 // Current Camera Position
 float camX, camY, camZ;
@@ -81,7 +80,7 @@ long myTime, timebase = 0, frame = 0;
 char s[32];
 
 //Enable OpenGL drawing.  
-bool drawModeEnabled = false;
+bool drawModeEnabled = true;
 
 bool P3F_scene = true; //choose between P3F scene or a built-in random scene
 
@@ -107,7 +106,7 @@ int RES_X, RES_Y;
 
 int WindowHandle = 0;
 
-float bias = 0.005f;
+float bias = 0.001f;
 
 // returns 0.0f for full shadow and 1.0 for full light.
 float lightPercentage (Vector interceptPoint, Vector lightPosition, Vector hitNormal) {
@@ -152,12 +151,14 @@ Vector refractDir (Vector& I, Vector& N, float& ior) {
 	float cosi = clamp(-1, 1, I*N);
 	float etai = 1, etat = ior;
 	Vector n = N;
+	//ray hits from outside
 	if (cosi < 0) { cosi = -cosi; }
+	//ray hits from outside, swap eta and invert normal
 	else { std::swap(etai, etat); n = -N; }
 	float eta = etai / etat;
+	//check if there is total reflection, return 0 refraction if true
 	float k = 1 - eta * eta * (1 - cosi * cosi);
-	if (k < 0) return Vector();
-	else return (I * eta) + (n * (eta * cosi - sqrtf(k)));
+	return k < 0 ? Vector() : (I * eta) + (n * (eta * cosi - sqrtf(k)));
 }
 
 void fresnel (Vector& I, Vector& N, const float& ior, float& kr) {
@@ -217,37 +218,40 @@ Color rayTracing (Ray ray, int depth, float ior_1) {
 		}
 		if (depth >= MAX_DEPTH) return c;
 
-		// calculate reflection
-		Color reflection;
 		float ior = hit_obj->GetMaterial()->GetRefrIndex();
 		bool outside = ray.direction * hit_normal < 0;
+		float kr;
+		// calculate reflection
+		Color reflection;
 		if (hit_obj->GetMaterial()->GetReflection() > 0) {
 			// compute reflection direction
 			Vector reflDir = reflectDir(ray.direction, hit_normal).normalize();
 			// compute reflection ray
 			Vector reflOrig = outside ? intercept_point + hit_normal * bias : intercept_point - hit_normal * bias;
 			Ray reflectionRay = Ray(reflOrig, reflDir);
-			reflection = rayTracing(reflectionRay, depth + 1, ior);
+			reflection = rayTracing(reflectionRay, depth + 1, 1.0f);
+			reflection *= hit_obj->GetMaterial()->GetSpecColor() * hit_obj->GetMaterial()->GetSpecular();
 		}
 
 		// calculate refraction
+		Color refraction;
 		if (hit_obj->GetMaterial()->GetTransmittance() > 0) {
 			//calculate fresnel
-			float kr;
 			fresnel(ray.direction, hit_normal, ior, kr);
 			// compute refraction ray (transmission)
-			Color refraction;
 			if (kr < 1) {
 				Vector refrDir = refractDir(ray.direction, hit_normal, ior).normalize();
 				Vector refrOrig = outside ? intercept_point - hit_normal * bias : intercept_point + hit_normal * bias;
 				Ray refractionRay = Ray(refrOrig, refrDir);
-				refraction = rayTracing(refractionRay, depth + 1, ior);
+				refraction = rayTracing(refractionRay, depth + 1, 1.0f);
 			}
-			//calculate mix result of reflection and refraction
-			c += (reflection * kr) + (refraction * (1 - kr));
 		}
-		else if (hit_obj->GetMaterial()->GetReflection() > 0)
-			c += reflection * hit_obj->GetMaterial()->GetSpecular();
+
+		//calculate mix result of reflection and refraction
+		if (hit_obj->GetMaterial()->GetTransmittance() > 0) {
+			c += (reflection * kr) + (refraction * (1 - kr));
+		} else if (hit_obj->GetMaterial()->GetReflection() > 0)
+			c += reflection;
 
 		return c;
 	}
@@ -452,7 +456,8 @@ void renderScene()
 		scene->GetCamera()->SetEye(Vector(camX, camY, camZ));  //Camera motion
 	}
 	
-	shadowPrng.seed(shadowSeed);
+	shadowPrng.seed(time(NULL) * time(NULL));
+	set_rand_seed(time(NULL) * time(NULL));
 
 	for (int y = 0; y < RES_Y; y++)
 	{
@@ -477,7 +482,8 @@ void renderScene()
 			if (sampler_type == 1) {
 				for (int p = 0; p < n_samples; p++) {
 					for (int q = 0; q < n_samples; q++) {
-						double r = ((double)rand() / (RAND_MAX));
+						double r = rand_double();
+
 						pixel.x = x + (p + r) / n_samples;
 						pixel.y = y + (q + r) / n_samples;
 						pixel.z = -scene->GetCamera()->GetPlaneDist();
