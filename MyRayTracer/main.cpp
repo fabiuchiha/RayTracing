@@ -44,7 +44,7 @@ float bias = 0.001f;
 
 // sampling settings
 // square root of number of samples per pixel
-int n_samples = 4;
+int n_samples = 8;
 
 // 0 to regular
 // 1 to random
@@ -58,7 +58,7 @@ int sampler_type = 1;
 #define SHADOW_MODE_WITHOUT_ANTI_ALIASING 3
 
 float lightSize = 0.05f;
-int shadowMode = SHADOW_MODE_WITHOUT_ANTI_ALIASING;
+int shadowMode = SHADOW_MODE_WITH_ANTI_ALIASING;
 size_t numShadowRays = 16;
 std::default_random_engine shadowPrng(time(NULL) * time(NULL));
 
@@ -472,8 +472,17 @@ void renderScene()
 						pixel.x = x + (p + 0.5f) / n_samples;
 						pixel.y = y + (q + 0.5f) / n_samples;
 
-						Ray ray = scene->GetCamera()->PrimaryRay(pixel);
-						color += rayTracing(ray, 1, 1.0).clamp();
+						Vector samplePoint = sample_unit_disk();
+						Vector lensSample;
+						lensSample.x = samplePoint.x * scene->GetCamera()->GetAperture();
+						lensSample.y = samplePoint.y * scene->GetCamera()->GetAperture();
+
+						Vector focalPoint;
+						focalPoint.x = pixel.x * scene->GetCamera()->GetFocalRatio();
+						focalPoint.y = pixel.y * scene->GetCamera()->GetFocalRatio();
+
+						Ray sampledRay = scene->GetCamera()->PrimaryRay(lensSample, focalPoint);
+						color += rayTracing(sampledRay, 1, 1.0).clamp();
 					}
 				}
 			}
