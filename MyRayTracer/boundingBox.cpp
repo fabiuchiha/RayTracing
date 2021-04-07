@@ -35,15 +35,34 @@ AABB AABB::operator= (const AABB& rhs) {
 // --------------------------------------------------------------------- destructor
 AABB::~AABB() {}
 
-// --------------------------------------------------------------------- inside
-// used to test if a ray starts inside a grid
+// -------------------------------------------------------------------- - inside
+// used to test if a ray starts inside a bbox
 
-bool AABB::isInside(const Vector& p) 
+bool AABB::isInside(const Vector & p)
 {
 	return ((p.x > min.x && p.x < max.x) && (p.y > min.y && p.y < max.y) && (p.z > min.z && p.z < max.z));
 }
 
-bool AABB::intercepts(Ray& r, float& dist)
+// --------------------------------------------------------------------- compute centroid
+Vector AABB::centroid(void) {
+	return (min + max) / 2;
+}
+
+// --------------------------------------------------------------------- extend AABB
+void AABB::extend(AABB box) {
+	if (min.x > box.min.x) min.x = box.min.x;
+	if (min.y > box.min.y) min.y = box.min.y;
+	if (min.z > box.min.z) min.z = box.min.z;
+
+	if (max.x < box.max.x) max.x = box.max.x;
+	if (max.y < box.max.y) max.y = box.max.y;
+	if (max.z < box.max.z) max.z = box.max.z;
+}
+
+// --------------------------------------------------------------------- AABB intersection
+
+
+bool AABB::intercepts(Ray& r, float& t)
 {
 	float ox = r.origin.x, oy = r.origin.y, oz = r.origin.z;
 	float dx = r.direction.x, dy = r.direction.y, dz = r.direction.z;
@@ -83,32 +102,15 @@ bool AABB::intercepts(Ray& r, float& dist)
 
 	float t0, t1;
 
-	// find largest entering t value
-	if (tx_min > ty_min) {
-		t0 = tx_min;
-	}
-	else {
-		t0 = ty_min;
-	}
+	//largest entering t value
+	t0 = MAX3(tx_min, ty_min, tz_min);
 
-	if (tz_min > t0) {
-		t0 = tz_min;
-	}
+	//smallest exiting t value
+	t1 = MIN3(tx_max, ty_max, tz_max);
 
-	// find smallest exiting t value
+	t = (t0 < 0) ? t1 : t0;
 
-	if (tx_max < ty_max) {
-		t1 = tx_max;
-	}
-	else {
-		t1 = ty_max;
-	}
-
-	if (tz_max < t1) {
-		t1 = tz_max;
-	}
-
-	return (t0 < t1&& t1 > 0.0);
+	return (t0 < t1&& t1 > 0);
 }
 
 #endif
