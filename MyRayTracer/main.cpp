@@ -27,9 +27,9 @@
 #include <IL/il.h>
 
 #include "scene.h"
-#include "grid.h"
 #include "maths.h"
 #include "sampler.h"
+#include "rayAccelerator.h"
 
 #define CAPTION "Whitted Ray-Tracer"
 
@@ -37,6 +37,10 @@
 #define COLOR_ATTRIB 1
 
 #define MAX_DEPTH 4
+
+typedef enum { NONE, GRID_ACC, BVH_ACC } Accelerator;
+Accelerator Accel_Struct = BVH_ACC;
+BVH* bvh_ptr = nullptr;
 
 unsigned int FrameCount = 0;
 
@@ -182,16 +186,28 @@ Color rayTracing (Ray ray, int depth, float ior_1) {
 	float closest_d = std::numeric_limits<float>::max();
 	Object* hit_obj = NULL;
 	
-	for (int i = 0; i < scene->getNumObjects(); i++) {
-		Object* obj = scene->getObject(i);
-		float d;
-		if (obj->intercepts(ray, d)) {
-			if (d < closest_d) {
-				closest_d = d;
-				hit_obj = obj;
+	if (Accel_Struct == BVH_ACC) {
+		// do BVH intersection
+		Vector hit_point;
+		if (BVH::Traverse(ray, &hit_obj, hit_point)) {
+			closest_d = (hit_point - ray.origin).length();
+		}
+	} else if (Accel_Struct == GRID_ACC) {
+		// TODO do grid acceleration
+	} else {
+		// do naive intersection
+		for (int i = 0; i < scene->getNumObjects(); i++) {
+			Object* obj = scene->getObject(i);
+			float d;
+			if (obj->intercepts(ray, d)) {
+				if (d < closest_d) {
+					closest_d = d;
+					hit_obj = obj;
+				}
 			}
 		}
 	}
+
 	if (hit_obj == NULL) return scene->GetBackgroundColor();
 	else {
 		//cout << ray.direction.x << " " << ray.direction.y << " " << ray.direction.z << "\n";
@@ -813,6 +829,18 @@ int main(int argc, char* argv[])
 
 		do {
 			init_scene();
+
+			if (Accel_Struct == BVH_ACC) {
+				bvh_ptr = new BVH();
+				vector<Object*> objs;
+				int num_objects = scene->getNumObjects();
+				for (int o = 0; o < num_objects; o++) {
+					objs.push_back(scene->getObject(o));
+				}
+				bvh_ptr->Build(objs);
+				printf("BVH built.\n\n");
+			}
+
 			auto timeStart = std::chrono::high_resolution_clock::now();
 			renderScene();  //Just creating an image file
 			auto timeEnd = std::chrono::high_resolution_clock::now();

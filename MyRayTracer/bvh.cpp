@@ -132,14 +132,112 @@ void BVH::build_recursive(int left_index, int right_index, BVHNode *node) {
 }
 
 bool BVH::Traverse(Ray& ray, Object** hit_obj, Vector& hit_point) {
-			float tmp;
-			float tmin = FLT_MAX;  //contains the closest primitive intersection
-			bool hit = false;
+	float tmp;
+	float tmin = FLT_MAX;  //contains the closest primitive intersection
+	bool hit = false;
 
-			BVHNode* currentNode = nodes[0];
-			
-			//PUT YOUR CODE HERE
+	stack<std::pair<BVHNode*, float>> hit_stack;
+
+	BVHNode* currentNode = nodes[0];
+
+	//PUT YOUR CODE HERE
+	while (1) {
+		// intersect with currentNode
+		if (currentNode->getAABB().intercepts(ray, tmp)) {
+			// check if it is a leave node
+			if (currentNode->isLeaf()) {
+				// intersect with all primitives in the leave
+				for (int i = currentNode->getIndex(); i < currentNode->getNObjs(); i++) {
+					Object* obj = objects[i];
+					float d;
+					if (obj->intercepts(ray, d)) {
+						if (d < tmin) {
+							hit = true;
+							tmin = d;
+							*hit_obj = obj;
+						}
+					}
+				}
+				if (tmin != FLT_MAX) {
+					hit_point = ray.origin + ray.direction * tmin;
+				}
+
+				break;
+			} else {
+				// intersect children
+				BVHNode* left  = nodes[currentNode->getIndex()  ];
+				BVHNode* right = nodes[currentNode->getIndex()+1];
+				bool left_hit, right_hit;
+				float left_intersection, right_intersection;
+
+				left_hit  = left->getAABB().intercepts(ray, left_intersection);
+				right_hit = right->getAABB().intercepts(ray, right_intersection);
+
+				// make sure left is nearer than right
+				if ((left_hit && right_hit && right_intersection < left_intersection) || (!left_hit && right_hit)) {
+					std::swap(left, right);
+					std::swap(left_hit, right_hit);
+					std::swap(left_intersection, right_intersection);
+				}
+
+				// left hit
+				if (left_hit) {
+					currentNode = left;
+				}
+				
+				// right hit
+				if (right_hit) {
+					hit_stack.push(std::pair(right, right_intersection))
+				}
+
+				// no hit
+				if (!left_hit && !right_hit) {
+					// pop elements from the stack
+					bool stack_popped = false;
+					while (!hit_stack.empty()) {
+						pair<BVHNode*, float> p = hit_stack.pop();
+						// we only have to try a node if we don't already have a hit nearer than its AABB
+						// FIXME: tmin is not initialized here. check what is wrong in the algorithm
+						if (!hit || p.second < tmin) {
+							currentNode = p.first;
+							stack_popped = true;
+							break;
+						}
+					} 
+					
+					if (!stack_popped) {
+						break;
+					}
+				}
+
+			}
+		} else {
+			break;
+		}
 	}
+
+	// recursive call
+	// if we've already had a leave intersection, we don't need to adapt tmin.
+	// if not we have to, because the AABB is always nearer then the object
+	if (!hit) {
+		tmin = FLT_MAX;
+	}
+	
+	for (pair<BVHNode*, float> p : hit_stack) {
+		Object* ho = nullptr;
+		Vector hp;
+		if (Traverse(ray, &ho, hp)) {
+			float d = (hp - ray.origin).length();
+			if (d < tmin) {
+				tmin = d;
+				*hit_obj = ho;
+				hit_point = hp;
+			}
+		}
+	}
+
+	return (tmin != FLT_MAX);
+}
 
 bool BVH::Traverse(Ray& ray) {  //shadow ray with length
 			float tmp;
