@@ -1,6 +1,8 @@
 #include "rayAccelerator.h"
 #include "macros.h"
 
+#include "maths.h"
+
 
 Grid::Grid(void) {}
 
