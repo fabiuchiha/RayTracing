@@ -42,18 +42,22 @@ void BVH::Build(vector<Object *> &objs) {
 	root->setAABB(world_bbox);
 	nodes.push_back(root);
 	build_recursive(0, objects.size(), root); // -> root node takes all the 
-	}
+}
 
 void BVH::build_recursive(int left_index, int right_index, BVHNode *node) {
 	int num_objs = right_index - left_index;
 
-	// TODO: recursion stop test
+	// recursion stop test
+	if (num_objs <= 2) {
+		node->makeLeaf(left_index, num_objs);
+		return;
+	}
 
 	// check which axis has the largest range of centroids
 	float mins[3] = {  FLT_MAX };
 	float maxs[3] = { -FLT_MAX };
-	for (int i = 0; i < num_objs; i++) {
-		Object* obj = objects[i+left_index];
+	for (int i = left_index; i < right_index; i++) {
+		Object* obj = objects[i];
 		AABB bbox = obj->GetBoundingBox();
 		float centroid[3] = { 
 			bbox.centroid().x,
@@ -84,6 +88,43 @@ void BVH::build_recursive(int left_index, int right_index, BVHNode *node) {
 	Comparator cmp;
 	cmp.dimension = max_dim;
 	std::sort(objects.begin() + left_index, objects.begin() + right_index, cmp);
+
+	// find a good splitting point.
+	// first iterate through the nodes until we are approx in the middle of the split axis in space
+	float middle = mins[max_dim] + diffs[max_dim] / 2.0f;
+	int split_idx = 0;
+	for (int i = left_index; i < right_index; i++) {
+		Object* obj = objects[i];
+		AABB bbox = obj->GetBoundingBox();
+		float centroid[3] = { 
+			bbox.centroid().x,
+			bbox.centroid().y,
+			bbox.centroid().z,
+		};
+
+		if (middle < centroid[max_dim]) {
+			split_idx = i;
+			break;
+		}
+	}
+
+	// if one side contains no nodes, revert to median splitting
+	if (split_idx == left_index || split_idx == right_index) {
+		split_idx = left_index + num_objs / 2;
+	}
+
+	// set this node to be non-leaf
+	node->makeNode(nodes.size());
+
+	// allocate new nodes
+	BVHNode *left  = new BVHNode();
+	BVHNode *right = new BVHNode();
+	nodes.push_back(left);
+	nodes.push_back(right);
+
+	// recursivley init the new nodes
+	build_recursive(left_index, split_idx - left_index, left);
+	build_recursive(split_idx, right_index - split_idx, right);
 
 	//right_index, left_index and split_index refer to the indices in the objects vector
 	// do not confuse with left_nodde_index and right_node_index which refer to indices in the nodes vector. 
