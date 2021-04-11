@@ -189,7 +189,7 @@ Color rayTracing (Ray ray, int depth, float ior_1) {
 	if (Accel_Struct == BVH_ACC) {
 		// do BVH intersection
 		Vector hit_point;
-		if (BVH::Traverse(ray, &hit_obj, hit_point)) {
+		if (bvh_ptr->Traverse(ray, &hit_obj, hit_point)) {
 			closest_d = (hit_point - ray.origin).length();
 		}
 	} else if (Accel_Struct == GRID_ACC) {
@@ -310,8 +310,6 @@ const GLchar* VertexShader =
 	"	vec4 position = vec4(in_Position, 0.0, 1.0);\n"
 	"	color = vec4(in_Color, 1.0);\n"
 	"	gl_Position = Matrix * position;\n"
-
-	"}\n"
 };
 
 const GLchar* FragmentShader =
@@ -362,9 +360,6 @@ void destroyShaderProgram()
 
 	checkOpenGLError("ERROR: Could not destroy shaders.");
 }
-
-/////////////////////////////////////////////////////////////////////// VAOs & VBOs
-
 
 void createBufferObjects()
 {
