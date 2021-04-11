@@ -39,7 +39,7 @@
 #define MAX_DEPTH 4
 
 typedef enum { NONE, GRID_ACC, BVH_ACC } Accelerator;
-Accelerator Accel_Struct = BVH_ACC;
+Accelerator Accel_Struct = NONE;
 BVH* bvh_ptr = nullptr;
 
 unsigned int FrameCount = 0;
