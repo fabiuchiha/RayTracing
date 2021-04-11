@@ -193,29 +193,29 @@ bool BVH::Traverse(Ray& ray, Object** hit_obj, Vector& hit_point) {
 				continue;
 			}
 		}
-	}
 
-	// recursive call on the stack
-	while (!hit_stack.empty()) {
-		pair<BVHNode*, float> p = hit_stack.top();
-		hit_stack.pop();
-		Object* ho = nullptr;
-		Vector hp;
+		// recursive call on the stack
+		while (!hit_stack.empty()) {
+			pair<BVHNode*, float> p = hit_stack.top();
+			hit_stack.pop();
+			Object* ho = nullptr;
+			Vector hp;
 
-		// TODO: if we already have a hit, we could check if the AABB of the stack elem
-		// is further away and discard it if so
+			// TODO: if we already have a hit, we could check if the AABB of the stack elem
+			// is further away and discard it if so
 
-		if (Traverse(ray, &ho, hp)) {
-			float d = (hp - ray.origin).length();
-			if (d < tmin) {
-				tmin = d;
-				*hit_obj = ho;
-				hit_point = hp;
+			if (Traverse(ray, &ho, hp)) {
+				float d = (hp - ray.origin).length();
+				if (d < tmin) {
+					tmin = d;
+					*hit_obj = ho;
+					hit_point = hp;
+				}
 			}
 		}
-	}
 
-	return (tmin != FLT_MAX);
+		return (tmin != FLT_MAX);
+	}
 }
 
 bool BVH::Traverse(Ray& ray) {  //shadow ray with length
