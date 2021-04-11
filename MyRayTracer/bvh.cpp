@@ -28,23 +28,23 @@ int BVH::getNumObjects() { return objects.size(); }
 
 void BVH::Build(vector<Object *> &objs) {		
 	BVHNode *root = new BVHNode();
-
-	Vector min = Vector(FLT_MAX, FLT_MAX, FLT_MAX), max = Vector(-FLT_MAX, -FLT_MAX, -FLT_MAX);
-	AABB world_bbox = AABB(min, max);
-
 	for (Object* obj : objs) {
-		AABB bbox = obj->GetBoundingBox();
-		world_bbox.extend(bbox);
 		objects.push_back(obj);
 	}
-	world_bbox.min.x -= EPSILON; world_bbox.min.y -= EPSILON; world_bbox.min.z -= EPSILON;
-	world_bbox.max.x += EPSILON; world_bbox.max.y += EPSILON; world_bbox.max.z += EPSILON;
-	root->setAABB(world_bbox);
 	nodes.push_back(root);
 	build_recursive(0, objects.size(), root); // -> root node takes all the 
 }
 
 void BVH::build_recursive(int left_index, int right_index, BVHNode *node) {
+	// set AABB of node
+	AABB aabb = objects[left_index]->GetBoundingBox();
+	for (int i = left_index+1; i < right_index; i++) {
+		aabb.extend(objects[i]->GetBoundingBox());
+	}
+	aabb.min.x -= EPSILON; aabb.min.y -= EPSILON; aabb.min.z -= EPSILON;
+	aabb.max.x += EPSILON; aabb.max.y += EPSILON; aabb.max.z += EPSILON;
+	node->setAABB(aabb);
+
 	int num_objs = right_index - left_index;
 
 	// recursion stop test
