@@ -166,7 +166,7 @@ bool BVH::traverse_recursive(BVHNode* currentNode, Ray& ray, Object** hit_obj, f
 	while (1) {
 		if (currentNode->isLeaf()) {
 			// intersect with all primitives in the leave
-			for (int i = currentNode->getIndex(); i < currentNode->getNObjs(); i++) {
+			for (int i = currentNode->getIndex(); i < currentNode->getIndex() + currentNode->getNObjs(); i++) {
 				Object* obj = objects[i];
 				float d;
 				if (obj->intercepts(ray, d)) {
@@ -248,9 +248,11 @@ bool BVH::Traverse(Ray& ray, Object** hit_obj, Vector& hit_point) {
 	}
 
 
+	bool traverse_hit = false;
 	Object* ho = nullptr;
 	float d;
 	if (traverse_recursive(nodes[0], ray, &ho, d)) {
+		traverse_hit = true;
 		if (d < tmin) {
 			tmin = d;
 			*hit_obj = ho;
@@ -262,6 +264,39 @@ bool BVH::Traverse(Ray& ray, Object** hit_obj, Vector& hit_point) {
 	if (tmin != FLT_MAX) {
 		hit_point = ray.origin + ray.direction * tmin;
 	}
+	
+	/* 
+	================ THIS IS JUST A SANITY CHECK ================
+	if (!traverse_hit) {
+		for (int i = 0; i < objects.size(); i++) {
+			float x;
+			if (objects[i]->intercepts(ray, x)) {
+				// find node which was in charge of the obj
+				int current_node_index;
+				for (int j = 0; j < nodes.size(); j++) {
+					BVHNode* n = nodes[j];
+					if (n->isLeaf() && n->getIndex() <= i && n->getIndex()+n->getNObjs() > i) {
+						current_node_index = j;
+					}
+				}
+
+				std::vector<int> ancestors;
+				while(current_node_index != 0) {
+					for (int j = 0; j < nodes.size(); j++) {
+						BVHNode* n = nodes[j];
+						if (!n->isLeaf() && n->getIndex() <= current_node_index && n->getIndex()+2 > current_node_index) {
+							ancestors.push_back(current_node_index);
+							current_node_index = j;
+							break;
+						}
+					}
+				}
+
+				traverse_recursive(nodes[0], ray, &ho, d);
+				assert(false);
+			}
+		}
+	}*/
 
 	return (tmin != FLT_MAX);
 }
