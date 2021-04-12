@@ -125,12 +125,18 @@ float lightPercentage (Vector interceptPoint, Vector lightPosition, Vector hitNo
 		Vector lightDir = (shadow_light_position - interceptPoint).normalize();
 		Ray shadowRay = Ray((interceptPoint + hitNormal*bias), lightDir);
 		bool interception = false;
-		for (int i = 0; i < scene->getNumObjects(); i++) {
-			Object* obj = scene->getObject(i);
-			float d;
-			if (obj->intercepts(shadowRay, d)) {
-				interception = true;
-				break;
+		if (Accel_Struct == GRID_ACC) {
+			interception = grid_ptr->Traverse(shadowRay);
+		}
+		else
+		{
+			for (int i = 0; i < scene->getNumObjects(); i++) {
+				Object* obj = scene->getObject(i);
+				float d;
+				if (obj->intercepts(shadowRay, d)) {
+					interception = true;
+					break;
+				}
 			}
 		}
 
