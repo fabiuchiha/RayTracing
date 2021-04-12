@@ -39,7 +39,7 @@
 #define MAX_DEPTH 4
 
 typedef enum { NONE, GRID_ACC, BVH_ACC } Accelerator;
-Accelerator Accel_Struct = GRID_ACC;
+Accelerator Accel_Struct = NONE;
 BVH* bvh_ptr = nullptr;
 Grid* grid_ptr = nullptr;
 
@@ -127,9 +127,9 @@ float lightPercentage (Vector interceptPoint, Vector lightPosition, Vector hitNo
 		bool interception = false;
 		if (Accel_Struct == GRID_ACC) {
 			interception = grid_ptr->Traverse(shadowRay);
-		}
-		else
-		{
+		} else if (Accel_Struct == BVH_ACC) {
+			interception = bvh_ptr->Traverse(shadowRay);
+		} else {
 			for (int i = 0; i < scene->getNumObjects(); i++) {
 				Object* obj = scene->getObject(i);
 				float d;

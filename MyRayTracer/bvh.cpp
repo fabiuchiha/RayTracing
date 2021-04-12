@@ -305,10 +305,13 @@ bool BVH::Traverse(Ray& ray, Object** hit_obj, Vector& hit_point) {
 }
 
 bool BVH::Traverse(Ray& ray) {  //shadow ray with length
-			float tmp;
+		float tmp;
 
-			double length = ray.direction.length(); //distance between light and intersection point
-			ray.direction.normalize();
+		double length = ray.direction.length(); //distance between light and intersection point
+		ray.direction.normalize();
 
-			//PUT YOUR CODE HERE
+		Object* hit_obj;
+		Vector hit_point;
+
+		return Traverse(ray, &hit_obj, hit_point);
 	}		
