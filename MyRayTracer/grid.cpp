@@ -37,7 +37,7 @@ void Grid::Build(vector<Object*>& objs) {
 	int index;  	// cell's array index
 
 
-	Vector min = Vector(FLT_MAX, FLT_MAX, FLT_MAX), max = Vector(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+	Vector min = Vector(0, 0, 0), max = Vector(0, 0, 0);
 
 	AABB grid_bbox = AABB(min, max);
 
@@ -46,7 +46,6 @@ void Grid::Build(vector<Object*>& objs) {
 		AABB o_bbox = obj->GetBoundingBox();
 		grid_bbox.extend(o_bbox);
 		this->addObject(obj);
-		//objects.push_back(obj);  
 	}
 	//slightly enlarge the grid box just for case
 	grid_bbox.min.x -= EPSILON; grid_bbox.min.y -= EPSILON; grid_bbox.min.z -= EPSILON;
