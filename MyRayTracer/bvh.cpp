@@ -156,10 +156,9 @@ void BVH::build_recursive(int left_index, int right_index, BVHNode *node) {
 	// node.index can have a index of objects vector or a index of nodes vector		
 }
 
-bool BVH::traverse_recursive(BVHNode* currentNode, Ray& ray, Object** hit_obj, Vector& hit_point) {
-	float tmp;
-	float tmin = FLT_MAX;  //contains the closest primitive intersection
+bool BVH::traverse_recursive(BVHNode* currentNode, Ray& ray, Object** hit_obj, float& tmin) {
 	bool hit = false;
+	tmin = FLT_MAX;  //contains the closest primitive intersection
 
 	stack<std::pair<BVHNode*, float>> hit_stack;
 
@@ -171,20 +170,15 @@ bool BVH::traverse_recursive(BVHNode* currentNode, Ray& ray, Object** hit_obj, V
 				Object* obj = objects[i];
 				float d;
 				if (obj->intercepts(ray, d)) {
+					assert(d > 0);
 					hit = true;
 					if (d < tmin) {
+						hit = true;
 						tmin = d;
 						*hit_obj = obj;
 					}
 				}
 			}
-
-			// calc hit_point if we had an intersection
-			if (tmin != FLT_MAX) {
-				hit_point = ray.origin + ray.direction * tmin;
-			}
-
-			break;
 		} else {
 			// intersect children
 			BVHNode* left  = nodes[currentNode->getIndex()  ];
@@ -221,23 +215,22 @@ bool BVH::traverse_recursive(BVHNode* currentNode, Ray& ray, Object** hit_obj, V
 		while (!hit_stack.empty()) {
 			pair<BVHNode*, float> p = hit_stack.top();
 			hit_stack.pop();
-			Object* ho = nullptr;
-			Vector hp;
 
 			// TODO: if we already have a hit, we could check if the AABB of the stack elem
 			// is further away and discard it if so
-
-			if (traverse_recursive(p.first, ray, &ho, hp)) {
-				float d = (hp - ray.origin).length();
+			
+			Object* ho = nullptr;
+			float d;
+			if (traverse_recursive(p.first, ray, &ho, d)) {
 				if (d < tmin) {
+					hit = true;
 					tmin = d;
 					*hit_obj = ho;
-					hit_point = hp;
 				}
 			}
 		}
 
-		return (tmin != FLT_MAX);
+		return hit;
 	}
 }
 
@@ -254,19 +247,20 @@ bool BVH::Traverse(Ray& ray, Object** hit_obj, Vector& hit_point) {
 		}
 	}
 
-	if (tmin != FLT_MAX) {
-		hit_point = ray.origin + ray.direction * tmin;
-	}
 
 	Object* ho = nullptr;
-	Vector hp;
-	if (traverse_recursive(nodes[0], ray, &ho, hp)) {
-		float d = (hp - ray.origin).length();
+	float d;
+	if (traverse_recursive(nodes[0], ray, &ho, d)) {
 		if (d < tmin) {
 			tmin = d;
 			*hit_obj = ho;
-			hit_point = hp;
 		}
+	}
+
+	assert(tmin > 0.0f);
+
+	if (tmin != FLT_MAX) {
+		hit_point = ray.origin + ray.direction * tmin;
 	}
 
 	return (tmin != FLT_MAX);
