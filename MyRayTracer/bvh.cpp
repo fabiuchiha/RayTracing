@@ -160,7 +160,7 @@ bool BVH::traverse_recursive(BVHNode* currentNode, Ray& ray, Object** hit_obj, f
 	bool hit = false;
 	tmin = FLT_MAX;  //contains the closest primitive intersection
 
-	stack<std::pair<BVHNode*, float>> hit_stack;
+	stack<StackItem> hit_stack;
 
 	//PUT YOUR CODE HERE
 	while (1) {
@@ -203,7 +203,7 @@ bool BVH::traverse_recursive(BVHNode* currentNode, Ray& ray, Object** hit_obj, f
 			
 			// right hit
 			if (right_hit) {
-				hit_stack.push(std::pair<BVHNode*, float>(right, right_intersection));
+				hit_stack.push(StackItem(right, right_intersection));
 			}
 
 			if (left_hit || right_hit) {
@@ -213,7 +213,7 @@ bool BVH::traverse_recursive(BVHNode* currentNode, Ray& ray, Object** hit_obj, f
 
 		// recursive call on the stack
 		while (!hit_stack.empty()) {
-			pair<BVHNode*, float> p = hit_stack.top();
+			StackItem p = hit_stack.top();
 			hit_stack.pop();
 
 			// TODO: if we already have a hit, we could check if the AABB of the stack elem
@@ -221,7 +221,7 @@ bool BVH::traverse_recursive(BVHNode* currentNode, Ray& ray, Object** hit_obj, f
 			
 			Object* ho = nullptr;
 			float d;
-			if (traverse_recursive(p.first, ray, &ho, d)) {
+			if (traverse_recursive(p.ptr, ray, &ho, d)) {
 				if (d < tmin) {
 					hit = true;
 					tmin = d;
@@ -248,11 +248,11 @@ bool BVH::Traverse(Ray& ray, Object** hit_obj, Vector& hit_point) {
 	}
 
 
-	bool traverse_hit = false;
+	//bool traverse_hit = false;
 	Object* ho = nullptr;
 	float d;
 	if (traverse_recursive(nodes[0], ray, &ho, d)) {
-		traverse_hit = true;
+		//traverse_hit = true;
 		if (d < tmin) {
 			tmin = d;
 			*hit_obj = ho;
