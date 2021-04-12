@@ -74,6 +74,7 @@ class BVH
 private:
 	int Threshold = 2;
 	vector<Object*> objects;
+	vector<Plane*> planes;
 	vector<BVH::BVHNode*> nodes;
 
 	struct StackItem {
@@ -81,8 +82,6 @@ private:
 		float t;
 		StackItem(BVHNode* _ptr, float _t) : ptr(_ptr), t(_t) { }
 	};
-
-	stack<StackItem> hit_stack;
 
 public:
 	BVH(void);
@@ -92,5 +91,6 @@ public:
 	void build_recursive(int left_index, int right_index, BVHNode* node);
 	bool Traverse(Ray& ray, Object** hit_obj, Vector& hit_point);
 	bool Traverse(Ray& ray);
+	bool traverse_recursive(BVHNode* currentNode, Ray& ray, Object** hit_obj, Vector& hit_point);
 };
 #endif

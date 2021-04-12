@@ -30,7 +30,13 @@ int BVH::getNumObjects() { return objects.size(); }
 void BVH::Build(vector<Object *> &objs) {		
 	BVHNode *root = new BVHNode();
 	for (Object* obj : objs) {
-		objects.push_back(obj);
+		// copy planes to their own array, they don't work with AABBs
+		Plane* p = dynamic_cast<Plane*>(obj);
+		if (p != nullptr) {
+			planes.push_back(p);
+		} else {
+			objects.push_back(obj);
+		}
 	}
 	nodes.push_back(root);
 	build_recursive(0, objects.size(), root); // -> root node takes all the
@@ -150,14 +156,12 @@ void BVH::build_recursive(int left_index, int right_index, BVHNode *node) {
 	// node.index can have a index of objects vector or a index of nodes vector		
 }
 
-bool BVH::Traverse(Ray& ray, Object** hit_obj, Vector& hit_point) {
+bool BVH::traverse_recursive(BVHNode* currentNode, Ray& ray, Object** hit_obj, Vector& hit_point) {
 	float tmp;
 	float tmin = FLT_MAX;  //contains the closest primitive intersection
 	bool hit = false;
 
 	stack<std::pair<BVHNode*, float>> hit_stack;
-
-	BVHNode* currentNode = nodes[0];
 
 	//PUT YOUR CODE HERE
 	while (1) {
@@ -223,7 +227,7 @@ bool BVH::Traverse(Ray& ray, Object** hit_obj, Vector& hit_point) {
 			// TODO: if we already have a hit, we could check if the AABB of the stack elem
 			// is further away and discard it if so
 
-			if (Traverse(ray, &ho, hp)) {
+			if (traverse_recursive(p.first, ray, &ho, hp)) {
 				float d = (hp - ray.origin).length();
 				if (d < tmin) {
 					tmin = d;
@@ -235,6 +239,37 @@ bool BVH::Traverse(Ray& ray, Object** hit_obj, Vector& hit_point) {
 
 		return (tmin != FLT_MAX);
 	}
+}
+
+bool BVH::Traverse(Ray& ray, Object** hit_obj, Vector& hit_point) {
+	float tmin = FLT_MAX;  //contains the closest primitive intersection
+
+	for (Plane* p : planes) {
+		float d;
+		if (p->intercepts(ray, d)) {
+			if (d < tmin) {
+				tmin = d;
+				*hit_obj = static_cast<Object*>(p);
+			}
+		}
+	}
+
+	if (tmin != FLT_MAX) {
+		hit_point = ray.origin + ray.direction * tmin;
+	}
+
+	Object* ho = nullptr;
+	Vector hp;
+	if (traverse_recursive(nodes[0], ray, &ho, hp)) {
+		float d = (hp - ray.origin).length();
+		if (d < tmin) {
+			tmin = d;
+			*hit_obj = ho;
+			hit_point = hp;
+		}
+	}
+
+	return (tmin != FLT_MAX);
 }
 
 bool BVH::Traverse(Ray& ray) {  //shadow ray with length
