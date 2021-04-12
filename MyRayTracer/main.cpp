@@ -163,7 +163,7 @@ Vector refractDir (Vector& I, Vector& N, float& ior) {
 	//ray hits from outside
 	if (cosi < 0) { cosi = -cosi; }
 	//ray hits from outside, swap eta and invert normal
-	else { std::swap(etai, etat); n = -N; }
+	else { std::swap(etai, etat); n = N*-1.0f; }
 	float eta = etai / etat;
 	//check if there is total reflection, return 0 refraction if true
 	float k = 1 - eta * eta * (1 - cosi * cosi);

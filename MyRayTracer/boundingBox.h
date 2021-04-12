@@ -1,7 +1,6 @@
 
 #include "vector.h"
 #include "ray.h"
-#include "macros.h"
 
 class AABB
 {
@@ -16,7 +15,7 @@ public:
 	
 	bool isInside(const Vector& p);
 	bool includes(const AABB& aabb);
-	bool intercepts(Ray& r, float& t);
+	bool intercepts(const Ray& r, float& t);
 	Vector centroid(void);
 	void extend(AABB box);
 

@@ -1,8 +1,6 @@
 #include "rayAccelerator.h"
 #include "macros.h"
 
-#include "maths.h"
-
 
 Grid::Grid(void) {}
 
@@ -37,7 +35,7 @@ void Grid::Build(vector<Object*>& objs) {
 	int index;  	// cell's array index
 
 
-	Vector min = Vector(0, 0, 0), max = Vector(0, 0, 0);
+	Vector min = Vector(FLT_MAX, FLT_MAX, FLT_MAX), max = Vector(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
 	AABB grid_bbox = AABB(min, max);
 

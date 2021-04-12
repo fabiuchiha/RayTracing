@@ -1,8 +1,8 @@
 #ifndef AABB_H
 #define AABB_H
 
-#include "vector.h"
 #include "boundingBox.h"
+#include "macros.h"
 
 //-------------------------------------------------------------------- - default constructor
 AABB::AABB(void) 
@@ -35,24 +35,12 @@ AABB AABB::operator= (const AABB& rhs) {
 // --------------------------------------------------------------------- destructor
 AABB::~AABB() {}
 
-// -------------------------------------------------------------------- - inside
+// --------------------------------------------------------------------- inside
 // used to test if a ray starts inside a bbox
 
-bool AABB::isInside(const Vector & p)
+bool AABB::isInside(const Vector& p) 
 {
 	return ((p.x > min.x && p.x < max.x) && (p.y > min.y && p.y < max.y) && (p.z > min.z && p.z < max.z));
-}
-
-bool AABB::includes(const AABB& aabb)
-{
-	return (
-		aabb.max.x <= max.x &&
-		aabb.max.y <= max.y &&
-		aabb.max.z <= max.z &&
-		aabb.min.x >= min.x &&
-		aabb.min.y >= min.y &&
-		aabb.min.z >= min.z
-	);
 }
 
 // --------------------------------------------------------------------- compute centroid
@@ -73,46 +61,69 @@ void AABB::extend(AABB box) {
 
 // --------------------------------------------------------------------- AABB intersection
 
-
-bool AABB::intercepts(Ray& r, float& t)
+bool AABB::includes(const AABB& aabb)
 {
-	float ox = r.origin.x, oy = r.origin.y, oz = r.origin.z;
-	float dx = r.direction.x, dy = r.direction.y, dz = r.direction.z;
+       return (
+               aabb.max.x <= max.x &&
+               aabb.max.y <= max.y &&
+               aabb.max.z <= max.z &&
+               aabb.min.x >= min.x &&
+               aabb.min.y >= min.y &&
+               aabb.min.z >= min.z
+       );
+}
+
+
+bool AABB::intercepts(const Ray& ray, float& t)
+{
+	double t0, t1;
+
+	float ox = ray.origin.x;
+	float oy = ray.origin.y;
+	float oz = ray.origin.z;
+	float dx = ray.direction.x;
+	float dy = ray.direction.y;
+	float dz = ray.direction.z;
+
+	float x0 = min.x;
+	float y0 = min.y;
+	float z0 = min.z;
+	float x1 = max.x;
+	float y1 = max.y;
+	float z1 = max.z;
 
 	float tx_min, ty_min, tz_min;
 	float tx_max, ty_max, tz_max;
 
 	float a = 1.0 / dx;
 	if (a >= 0) {
-		tx_min = (min.x - ox) * a;
-		tx_max = (max.x - ox) * a;
+		tx_min = (x0 - ox) * a;
+		tx_max = (x1 - ox) * a;
 	}
 	else {
-		tx_min = (max.x - ox) * a;
-		tx_max = (min.x - ox) * a;
+		tx_min = (x1 - ox) * a;
+		tx_max = (x0 - ox) * a;
 	}
 
 	float b = 1.0 / dy;
 	if (b >= 0) {
-		ty_min = (min.y - oy) * b;
-		ty_max = (max.y - oy) * b;
+		ty_min = (y0 - oy) * b;
+		ty_max = (y1 - oy) * b;
 	}
 	else {
-		ty_min = (max.y - oy) * b;
-		ty_max = (min.y - oy) * b;
+		ty_min = (y1 - oy) * b;
+		ty_max = (y0 - oy) * b;
 	}
 
 	float c = 1.0 / dz;
 	if (c >= 0) {
-		tz_min = (min.z - oz) * c;
-		tz_max = (max.z - oz) * c;
+		tz_min = (z0 - oz) * c;
+		tz_max = (z1 - oz) * c;
 	}
 	else {
-		tz_min = (max.z - oz) * c;
-		tz_max = (min.z - oz) * c;
+		tz_min = (z1 - oz) * c;
+		tz_max = (z0 - oz) * c;
 	}
-
-	float t0, t1;
 
 	//largest entering t value
 	t0 = MAX3(tx_min, ty_min, tz_min);
@@ -122,7 +133,6 @@ bool AABB::intercepts(Ray& r, float& t)
 
 	t = (t0 < 0) ? t1 : t0;
 
-	return (t0 < t1&& t1 > 0);
+	return (t0 < t1 && t1 > 0);
 }
-
 #endif

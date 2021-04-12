@@ -14,11 +14,13 @@ public:
 	Vector(const Vector& v);
 
 	float length();
+
+	float getAxisValue(int axis);
+
 	Vector&	normalize();
 	Vector operator=(const Vector& v);
 	Vector operator+( const Vector& v );
 	Vector operator-( const Vector& v );
-	Vector operator-();
 	Vector operator*( float f );
 	float  operator*(const Vector& v);   //inner product
 	Vector operator/( float f );
@@ -27,7 +29,6 @@ public:
 	Vector&	operator-=	(const float v);
 	Vector&	operator*=	(const float v);
 	Vector&	operator+=	(const float v);
-	float getAxisValue(int dimension);
 
 	float x;
 	float y;

@@ -43,11 +43,8 @@ class BVH
 		int dimension;
 
 		bool operator() (Object* a, Object* b) {
-			AABB box;
-			box = a->GetBoundingBox();
-			float ca = (box.max.getAxisValue(dimension) + box.min.getAxisValue(dimension)) * 0.5f;
-			box = b->GetBoundingBox();
-			float cb = (box.max.getAxisValue(dimension) + box.min.getAxisValue(dimension)) * 0.5f;
+			float ca = a->GetBoundingBox().centroid().getAxisValue(dimension);
+			float cb = b->GetBoundingBox().centroid().getAxisValue(dimension);
 			return ca < cb;
 		}
 	};
@@ -72,16 +69,17 @@ class BVH
 	};
 
 private:
+	int Threshold = 2;
+	vector<Object*> objects;
+	vector<BVH::BVHNode*> nodes;
+	vector<Plane*> planes;
+
 	struct StackItem {
 		BVHNode* ptr;
 		float t;
 		StackItem(BVHNode* _ptr, float _t) : ptr(_ptr), t(_t) { }
 	};
 
-	int Threshold = 2;
-	vector<Object*> objects;
-	vector<Plane*> planes;
-	vector<BVH::BVHNode*> nodes;
 	vector<StackItem> hit_stack;
 
 public:

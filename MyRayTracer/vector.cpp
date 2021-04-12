@@ -1,5 +1,5 @@
-#include "vector.h"
 #include <cmath>
+#include "vector.h"
 
 Vector::Vector(float a_x, float a_y, float a_z) : x(a_x), y(a_y), z(a_z)
 {
@@ -10,6 +10,10 @@ Vector::Vector(float a_x, float a_y, float a_z) : x(a_x), y(a_y), z(a_z)
 float Vector::length()
 {
 	return sqrt( x * x + y * y + z * z );
+}
+
+float Vector::getAxisValue(int axis) {
+	return (axis == 0) ? x : (axis == 1) ? y : z;
 }
 
 // --------------------------------------------------------------------- copy constructor
@@ -37,11 +41,6 @@ Vector Vector::operator+(const  Vector& v )
 Vector Vector::operator-(const Vector& v )
 {
 	return Vector( x - v.x, y - v.y, z - v.z );
-}
-
-Vector Vector::operator-()
-{
-	return Vector(-x, -y, -z);
 }
 
 
@@ -95,21 +94,3 @@ Vector Vector::operator%( const Vector& v)
 
 	return Vector( sX, sY, sZ );
 }
-
-float Vector::getAxisValue(int dimension)
-{
-	switch (dimension)
-	{
-	case 0:
-		return x;
-	case 1:
-		return y;
-	case 2:
-		return z;
-	default:
-		return 0.0f;
-	}
-
-	
-}
-
