@@ -100,7 +100,7 @@ void BVH::build_recursive(int left_index, int right_index, BVHNode *node) {
 	// find a good splitting point.
 	// first iterate through the nodes until we are approx in the middle of the split axis in space
 	float middle = mins[max_dim] + diffs[max_dim] / 2.0f;
-	int split_idx = 0;
+	int split_idx = left_index;
 	for (int i = left_index; i < right_index; i++) {
 		Object* obj = objects[i];
 		AABB bbox = obj->GetBoundingBox();
@@ -221,7 +221,7 @@ bool BVH::traverse_recursive(BVHNode* currentNode, Ray& ray, Object** hit_obj, f
 			if (p.t > tmin) {
 				continue;
 			}
-			
+
 			float d;
 			Object* ho = nullptr;
 			if (traverse_recursive(p.ptr, ray, &ho, d)) {
