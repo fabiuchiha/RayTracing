@@ -168,8 +168,10 @@ Vector Sphere::getNormal( Vector point )
 }
 
 AABB Sphere::GetBoundingBox() {
-	Vector a_min;
-	Vector a_max ;
+	Vector a_min = center;
+	Vector a_max = center;
+	a_min -= radius;
+	a_max += radius;
 	return(AABB(a_min, a_max));
 }
 
