@@ -160,8 +160,6 @@ bool BVH::traverse_recursive(BVHNode* currentNode, Ray& ray, Object** hit_obj, f
 	bool hit = false;
 	tmin = FLT_MAX;  //contains the closest primitive intersection
 
-	stack<StackItem> hit_stack;
-
 	//PUT YOUR CODE HERE
 	while (1) {
 		if (currentNode->isLeaf()) {
@@ -203,7 +201,7 @@ bool BVH::traverse_recursive(BVHNode* currentNode, Ray& ray, Object** hit_obj, f
 			
 			// right hit
 			if (right_hit) {
-				hit_stack.push(StackItem(right, right_intersection));
+				hit_stack.push_back(StackItem(right, right_intersection));
 			}
 
 			if (left_hit || right_hit) {
@@ -213,8 +211,8 @@ bool BVH::traverse_recursive(BVHNode* currentNode, Ray& ray, Object** hit_obj, f
 
 		// recursive call on the stack
 		while (!hit_stack.empty()) {
-			StackItem p = hit_stack.top();
-			hit_stack.pop();
+			StackItem p = hit_stack.back();
+			hit_stack.pop_back();
 
 			// if we already have a hit, we can check if the AABB of the stack elem
 			// is further away and discard it if so

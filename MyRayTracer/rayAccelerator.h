@@ -82,6 +82,7 @@ private:
 	vector<Object*> objects;
 	vector<Plane*> planes;
 	vector<BVH::BVHNode*> nodes;
+	vector<StackItem> hit_stack;
 
 public:
 	BVH(void);
