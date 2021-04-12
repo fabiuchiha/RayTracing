@@ -39,8 +39,9 @@
 #define MAX_DEPTH 4
 
 typedef enum { NONE, GRID_ACC, BVH_ACC } Accelerator;
-Accelerator Accel_Struct = NONE;
+Accelerator Accel_Struct = GRID_ACC;
 BVH* bvh_ptr = nullptr;
+Grid* grid_ptr = nullptr;
 
 unsigned int FrameCount = 0;
 
@@ -194,6 +195,10 @@ Color rayTracing (Ray ray, int depth, float ior_1) {
 		}
 	} else if (Accel_Struct == GRID_ACC) {
 		// TODO do grid acceleration
+		Vector hit_point;
+		if (grid_ptr->Traverse(ray, &hit_obj, hit_point)) {
+			closest_d = (hit_point - ray.origin).length();
+		}
 	} else {
 		// do naive intersection
 		for (int i = 0; i < scene->getNumObjects(); i++) {
@@ -834,6 +839,17 @@ int main(int argc, char* argv[])
 				}
 				bvh_ptr->Build(objs);
 				printf("BVH built.\n\n");
+			}
+
+			if (Accel_Struct == GRID_ACC) { 
+				grid_ptr = new Grid();
+				vector<Object*> objs; 
+				int num_objects = scene->getNumObjects(); 
+				for (int o = 0; o < num_objects; o++) { 
+					objs.push_back(scene->getObject(o)); 
+				}
+				grid_ptr->Build(objs); 
+				printf("Grid built.\n\n"); 
 			}
 
 			auto timeStart = std::chrono::high_resolution_clock::now();

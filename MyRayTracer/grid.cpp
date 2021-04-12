@@ -46,7 +46,7 @@ void Grid::Build(vector<Object*>& objs) {
 		AABB o_bbox = obj->GetBoundingBox();
 		grid_bbox.extend(o_bbox);
 		this->addObject(obj);
-		objects.push_back(obj);  
+		//objects.push_back(obj);  
 	}
 	//slightly enlarge the grid box just for case
 	grid_bbox.min.x -= EPSILON; grid_bbox.min.y -= EPSILON; grid_bbox.min.z -= EPSILON;
