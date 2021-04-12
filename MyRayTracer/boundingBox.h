@@ -15,6 +15,7 @@ public:
 	AABB operator= (const AABB& rhs);
 	
 	bool isInside(const Vector& p);
+	bool includes(const AABB& aabb);
 	bool intercepts(Ray& r, float& t);
 	Vector centroid(void);
 	void extend(AABB box);

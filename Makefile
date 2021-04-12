@@ -16,7 +16,7 @@ INCLUDE := -I. -IMyRayTracer/Dependencies/conio
 LIBPATH :=
 LIBS := -lglut -lGL -lGLU -lGLEW -lm -lIL
 
-FLAGS := -Wall
+FLAGS := -Wall -g
 CCFLAGS := $(FLAGS) -std=c11
 CXXFLAGS := $(FLAGS)
 

@@ -1,6 +1,7 @@
 #include "rayAccelerator.h"
 #include "macros.h"
 #include <algorithm>
+#include <cassert>
 
 using namespace std;
 
@@ -32,7 +33,7 @@ void BVH::Build(vector<Object *> &objs) {
 		objects.push_back(obj);
 	}
 	nodes.push_back(root);
-	build_recursive(0, objects.size(), root); // -> root node takes all the 
+	build_recursive(0, objects.size(), root); // -> root node takes all the
 }
 
 void BVH::build_recursive(int left_index, int right_index, BVHNode *node) {
@@ -49,6 +50,7 @@ void BVH::build_recursive(int left_index, int right_index, BVHNode *node) {
 
 	// recursion stop test
 	if (num_objs <= 2) {
+		assert(num_objs > 0);
 		node->makeLeaf(left_index, num_objs);
 		return;
 	}
@@ -123,8 +125,25 @@ void BVH::build_recursive(int left_index, int right_index, BVHNode *node) {
 	nodes.push_back(right);
 
 	// recursivley init the new nodes
-	build_recursive(left_index, split_idx - left_index, left);
-	build_recursive(split_idx, right_index - split_idx, right);
+	assert(split_idx >= left_index && split_idx <= right_index);
+	build_recursive(left_index, split_idx, left);
+	build_recursive(split_idx, right_index, right);
+
+	// sanity checks
+	assert(node->getAABB().includes(left->getAABB()));
+	if (left->isLeaf()) {
+		assert(left->getNObjs() > 0);
+		for (int i = left->getIndex(); i < left->getIndex()+left->getNObjs(); i++) {
+			assert(left->getAABB().includes(objects[i]->GetBoundingBox()));
+		}
+	}
+	assert(node->getAABB().includes(right->getAABB()));
+	if (right->isLeaf()) {
+		assert(right->getNObjs() > 0);
+		for (int i = right->getIndex(); i < right->getIndex()+right->getNObjs(); i++) {
+			assert(right->getAABB().includes(objects[i]->GetBoundingBox()));
+		}
+	}
 
 	//right_index, left_index and split_index refer to the indices in the objects vector
 	// do not confuse with left_nodde_index and right_node_index which refer to indices in the nodes vector. 

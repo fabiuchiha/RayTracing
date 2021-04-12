@@ -43,6 +43,18 @@ bool AABB::isInside(const Vector & p)
 	return ((p.x > min.x && p.x < max.x) && (p.y > min.y && p.y < max.y) && (p.z > min.z && p.z < max.z));
 }
 
+bool AABB::includes(const AABB& aabb)
+{
+	return (
+		aabb.max.x <= max.x &&
+		aabb.max.y <= max.y &&
+		aabb.max.z <= max.z &&
+		aabb.min.x >= min.x &&
+		aabb.min.y >= min.y &&
+		aabb.min.z >= min.z
+	);
+}
+
 // --------------------------------------------------------------------- compute centroid
 Vector AABB::centroid(void) {
 	return (min + max) / 2;
