@@ -72,16 +72,16 @@ class BVH
 	};
 
 private:
-	int Threshold = 2;
-	vector<Object*> objects;
-	vector<Plane*> planes;
-	vector<BVH::BVHNode*> nodes;
-
 	struct StackItem {
 		BVHNode* ptr;
 		float t;
 		StackItem(BVHNode* _ptr, float _t) : ptr(_ptr), t(_t) { }
 	};
+
+	int Threshold = 2;
+	vector<Object*> objects;
+	vector<Plane*> planes;
+	vector<BVH::BVHNode*> nodes;
 
 public:
 	BVH(void);

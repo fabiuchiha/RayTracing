@@ -55,7 +55,7 @@ void BVH::build_recursive(int left_index, int right_index, BVHNode *node) {
 	int num_objs = right_index - left_index;
 
 	// recursion stop test
-	if (num_objs <= 2) {
+	if (num_objs <= Threshold) {
 		assert(num_objs > 0);
 		node->makeLeaf(left_index, num_objs);
 		return;
@@ -216,11 +216,14 @@ bool BVH::traverse_recursive(BVHNode* currentNode, Ray& ray, Object** hit_obj, f
 			StackItem p = hit_stack.top();
 			hit_stack.pop();
 
-			// TODO: if we already have a hit, we could check if the AABB of the stack elem
+			// if we already have a hit, we can check if the AABB of the stack elem
 			// is further away and discard it if so
+			if (p.t > tmin) {
+				continue;
+			}
 			
-			Object* ho = nullptr;
 			float d;
+			Object* ho = nullptr;
 			if (traverse_recursive(p.ptr, ray, &ho, d)) {
 				if (d < tmin) {
 					hit = true;
