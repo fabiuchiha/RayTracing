@@ -779,7 +779,29 @@ void init(int argc, char* argv[])
 	setupCallbacks();
 	
 }
+void init_acceleration_structs(void) {
+	if (Accel_Struct == BVH_ACC) {
+		bvh_ptr = new BVH();
+		vector<Object*> objs;
+		int num_objects = scene->getNumObjects();
+		for (int o = 0; o < num_objects; o++) {
+			objs.push_back(scene->getObject(o));
+		}
+		bvh_ptr->Build(objs);
+		printf("BVH built.\n\n");
+	}
 
+	if (Accel_Struct == GRID_ACC) {
+		grid_ptr = new Grid();
+		vector<Object*> objs;
+		int num_objects = scene->getNumObjects();
+		for (int o = 0; o < num_objects; o++) {
+			objs.push_back(scene->getObject(o));
+		}
+		grid_ptr->Build(objs);
+		printf("Grid built.\n\n");
+	}
+}
 
 void init_scene(void)
 {
@@ -835,28 +857,7 @@ int main(int argc, char* argv[])
 
 		do {
 			init_scene();
-
-			if (Accel_Struct == BVH_ACC) {
-				bvh_ptr = new BVH();
-				vector<Object*> objs;
-				int num_objects = scene->getNumObjects();
-				for (int o = 0; o < num_objects; o++) {
-					objs.push_back(scene->getObject(o));
-				}
-				bvh_ptr->Build(objs);
-				printf("BVH built.\n\n");
-			}
-
-			if (Accel_Struct == GRID_ACC) { 
-				grid_ptr = new Grid();
-				vector<Object*> objs; 
-				int num_objects = scene->getNumObjects(); 
-				for (int o = 0; o < num_objects; o++) { 
-					objs.push_back(scene->getObject(o)); 
-				}
-				grid_ptr->Build(objs); 
-				printf("Grid built.\n\n"); 
-			}
+			init_acceleration_structs();
 
 			auto timeStart = std::chrono::high_resolution_clock::now();
 			renderScene();  //Just creating an image file
@@ -874,6 +875,7 @@ int main(int argc, char* argv[])
 	else {   //Use OpenGL to draw image in the screen
 		printf("OPENGL DRAWING MODE\n\n");
 		init_scene();
+		init_acceleration_structs();
 		size_vertices = 2 * RES_X*RES_Y * sizeof(float);
 		size_colors = 3 * RES_X*RES_Y * sizeof(float);
 		vertices = (float*)malloc(size_vertices);
