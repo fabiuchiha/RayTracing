@@ -49,11 +49,11 @@ float bias = 0.001f;
 
 // sampling settings
 // square root of number of samples per pixel
-int n_samples = 1;
+int n_samples = 8;
 
 // 0 to regular
 // 1 to random
-int sampler_type = 0;
+int sampler_type = 1;
 
 // light parameters for soft shadows
 // lights are modeled as an axis aligned rectangle, with the point in the middle.
@@ -64,7 +64,7 @@ int sampler_type = 0;
 
 float lightSize = 0.05f;
 int shadowMode = SHADOW_MODE_WITH_ANTI_ALIASING;
-size_t numShadowRays = 1;
+size_t numShadowRays = 16;
 std::default_random_engine shadowPrng(time(NULL) * time(NULL));
 
 // Current Camera Position
@@ -85,7 +85,7 @@ long myTime, timebase = 0, frame = 0;
 char s[32];
 
 //Enable OpenGL drawing.  
-bool drawModeEnabled = true;
+bool drawModeEnabled = false;
 
 bool P3F_scene = true; //choose between P3F scene or a built-in random scene
 
