@@ -480,9 +480,17 @@ void renderScene()
 	shadowPrng.seed(time(NULL) * time(NULL));
 	set_rand_seed(time(NULL) * time(NULL));
 
-	for (int y = 0; y < RES_Y; y++) {
-		for (int x = 0; x < RES_X; x++) {
+	int percentage = 0;
+	for (int y = 0; y < RES_Y; y++)
+	{
+		int new_percentage = (y * 100) / RES_Y;
+		if (new_percentage > percentage) {
+			percentage = new_percentage;
+			std::cout << percentage << " %" << std::endl;
+		}
 
+		for (int x = 0; x < RES_X; x++)
+		{
 			Color color; 
 			Vector pixel;  //viewport coordinates
 
