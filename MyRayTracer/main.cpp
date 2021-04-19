@@ -45,6 +45,8 @@ Accelerator Accel_Struct = BVH_ACC; // Acceleration structure used
 BVH* bvh_ptr = nullptr;
 Grid* grid_ptr = nullptr;
 
+float rougness = 0.3f; // rougness used in the fuzzy refletions
+
 float bias = 0.001f; // Bias used in reflection and refraction calculation
 
 bool skybox = true; // Enable skybox
@@ -184,6 +186,16 @@ void fresnel (Vector& I, Vector& N, const float& ior, float& kr) {
 	}
 }
 
+// random vector inside a sphere
+Vector rand_in_unit_sphere() {
+	Vector point = Vector(rand_float(), rand_float(), rand_float());
+	point.normalize();
+	float d = rand_float();
+	point *= d;
+	return point;
+}
+
+
 
 Color rayTracing (Ray ray, int depth, float ior_1) {
 	// intersect ray with all objects and find closest intersection
@@ -250,7 +262,7 @@ Color rayTracing (Ray ray, int depth, float ior_1) {
 		Color reflection;
 		if (hit_obj->GetMaterial()->GetReflection() > 0) {
 			// compute reflection direction
-			Vector reflDir = reflectDir(ray.direction, hit_normal).normalize();
+			Vector reflDir = (reflectDir(ray.direction, hit_normal) + rand_in_unit_sphere() * rougness).normalize();
 			// compute reflection ray
 			Vector reflOrig = outside ? intercept_point + hit_normal * bias : intercept_point - hit_normal * bias;
 			Ray reflectionRay = Ray(reflOrig, reflDir);
