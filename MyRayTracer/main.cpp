@@ -38,33 +38,35 @@
 
 #define MAX_DEPTH 4
 
+unsigned int FrameCount = 0;
+
 typedef enum { NONE, GRID_ACC, BVH_ACC } Accelerator;
-Accelerator Accel_Struct = BVH_ACC;
+Accelerator Accel_Struct = BVH_ACC; // Acceleration structure used
 BVH* bvh_ptr = nullptr;
 Grid* grid_ptr = nullptr;
 
-unsigned int FrameCount = 0;
+float bias = 0.001f; // Bias used in reflection and refraction calculation
 
-float bias = 0.001f;
+bool skybox = true; // Enable skybox
 
-// sampling settings
-// square root of number of samples per pixel
-int n_samples = 8;
+bool drawModeEnabled = false; // Enable OpenGL drawing.  
 
-// 0 to regular
-// 1 to random
-int sampler_type = 1;
+bool P3F_scene = true; // Choose between P3F scene or a built-in random scene
 
-// light parameters for soft shadows
-// lights are modeled as an axis aligned rectangle, with the point in the middle.
-// lightSize is the length of the sides.
+// Sampling settings
+int n_samples = 8; // Square root of number of samples per pixel
+
+int sampler_type = 1; // 0 to regular pixel sampling, 1 to random pixel sampling
+
+// Light parameters for soft shadows
+// Lights are modeled as an axis aligned rectangle, with the point in the middle
 #define SHADOW_MODE_HARD 1
 #define SHADOW_MODE_WITH_ANTI_ALIASING 2
 #define SHADOW_MODE_WITHOUT_ANTI_ALIASING 3
 
-float lightSize = 0.05f;
-int shadowMode = SHADOW_MODE_WITH_ANTI_ALIASING;
-size_t numShadowRays = 16;
+float lightSize = 0.05f; // Lenght of the light area sides
+int shadowMode = SHADOW_MODE_WITH_ANTI_ALIASING; // Type of shadows used
+size_t numShadowRays = 8; // Number of shadow rays per pixel
 std::default_random_engine shadowPrng(time(NULL) * time(NULL));
 
 // Current Camera Position
@@ -83,11 +85,6 @@ float r = 4.0f;
 // Frame counting and FPS computation
 long myTime, timebase = 0, frame = 0;
 char s[32];
-
-//Enable OpenGL drawing.  
-bool drawModeEnabled = false;
-
-bool P3F_scene = true; //choose between P3F scene or a built-in random scene
 
 // Points defined by 2 attributes: positions which are stored in vertices array and colors which are stored in colors array
 float *colors;
@@ -220,15 +217,10 @@ Color rayTracing (Ray ray, int depth, float ior_1) {
 	}
 
 	if (hit_obj == NULL) {
-		if (scene->GetSkyBoxFlg()) {
-			return scene->GetSkyboxColor(ray);
-		}
-		else {
-			return scene->GetBackgroundColor();
-		}
+		if (scene->GetSkyBoxFlg() && skybox) return scene->GetSkyboxColor(ray);
+		else return scene->GetBackgroundColor();
 	}
 	else {
-		//cout << ray.direction.x << " " << ray.direction.y << " " << ray.direction.z << "\n";
 		//compute intercection point and hit normal
 		Vector intercept_point = ray.origin + ray.direction * closest_d;
 		Vector hit_normal = hit_obj->getNormal(intercept_point);
@@ -488,57 +480,46 @@ void renderScene()
 	shadowPrng.seed(time(NULL) * time(NULL));
 	set_rand_seed(time(NULL) * time(NULL));
 
-	for (int y = 0; y < RES_Y; y++)
-	{
-		for (int x = 0; x < RES_X; x++)
-		{
-			Color color; 
+	for (int y = 0; y < RES_Y; y++) {
+		for (int x = 0; x < RES_X; x++) {
 
+			Color color; 
 			Vector pixel;  //viewport coordinates
 
-			if (sampler_type == 0) {
-				for (int p = 0; p < n_samples; p++) {
-					for (int q = 0; q < n_samples; q++) {
+			for (int p = 0; p < n_samples; p++) {
+				for (int q = 0; q < n_samples; q++) {
+					if (sampler_type == 0) {
 						pixel.x = x + (p + 0.5f) / n_samples;
 						pixel.y = y + (q + 0.5f) / n_samples;
-
-						Vector samplePoint = sample_unit_disk();
-						Vector lensSample;
-						lensSample.x = samplePoint.x * scene->GetCamera()->GetAperture();
-						lensSample.y = samplePoint.y * scene->GetCamera()->GetAperture();
-
-						Vector focalPoint;
-						focalPoint.x = pixel.x * scene->GetCamera()->GetFocalRatio();
-						focalPoint.y = pixel.y * scene->GetCamera()->GetFocalRatio();
-
-						Ray sampledRay = scene->GetCamera()->PrimaryRay(lensSample, focalPoint);
-						color += rayTracing(sampledRay, 1, 1.0).clamp();
 					}
-				}
-			}
-
-			if (sampler_type == 1) {
-				for (int p = 0; p < n_samples; p++) {
-					for (int q = 0; q < n_samples; q++) {
+					else if (sampler_type == 1) {
 						double r = rand_double();
 						pixel.x = x + (p + r) / n_samples;
 						pixel.y = y + (q + r) / n_samples;
+					}
 
+					float aperture = scene->GetCamera()->GetAperture();
+					if (aperture) {
 						Vector samplePoint = sample_unit_disk();
 						Vector lensSample;
-						lensSample.x = samplePoint.x * scene->GetCamera()->GetAperture();
-						lensSample.y = samplePoint.y * scene->GetCamera()->GetAperture();
+						lensSample.x = samplePoint.x * aperture;
+						lensSample.y = samplePoint.y * aperture;
 
+						float focalRatio = scene->GetCamera()->GetFocalRatio();
 						Vector focalPoint;
-						focalPoint.x = pixel.x * scene->GetCamera()->GetFocalRatio();
-						focalPoint.y = pixel.y * scene->GetCamera()->GetFocalRatio();
+						focalPoint.x = pixel.x * focalRatio;
+						focalPoint.y = pixel.y * focalRatio;
 
 						Ray sampledRay = scene->GetCamera()->PrimaryRay(lensSample, focalPoint);
 						color += rayTracing(sampledRay, 1, 1.0).clamp();
 					}
+					else {
+						Ray primaryRay = scene->GetCamera()->PrimaryRay(pixel);
+						color += rayTracing(primaryRay, 1, 1.0).clamp();
+					}
 				}
 			}
-
+			
 			color = color * (1 / pow(n_samples, 2));
 
 			img_Data[counter++] = u8fromfloat((float)color.r());
@@ -555,8 +536,8 @@ void renderScene()
 				colors[index_col++] = (float)color.b();
 			}
 		}
-	
 	}
+
 	if(drawModeEnabled) {
 		drawPoints();
 		glutSwapBuffers();
