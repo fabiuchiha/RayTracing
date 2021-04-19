@@ -1,5 +1,4 @@
-#include "vector.h"
-#include "maths.h"
+#include "sampler.h"
 
 // Sampling with rejection method
 Vector sample_unit_disk(void) {
