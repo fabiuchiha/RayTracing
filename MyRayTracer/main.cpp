@@ -219,7 +219,14 @@ Color rayTracing (Ray ray, int depth, float ior_1) {
 		}
 	}
 
-	if (hit_obj == NULL) return scene->GetBackgroundColor();
+	if (hit_obj == NULL) {
+		if (scene->GetSkyBoxFlg()) {
+			return scene->GetSkyboxColor(ray);
+		}
+		else {
+			return scene->GetBackgroundColor();
+		}
+	}
 	else {
 		//cout << ray.direction.x << " " << ray.direction.y << " " << ray.direction.z << "\n";
 		//compute intercection point and hit normal
