@@ -41,24 +41,24 @@
 unsigned int FrameCount = 0;
 
 typedef enum { NONE, GRID_ACC, BVH_ACC } Accelerator;
-Accelerator Accel_Struct = BVH_ACC; // Acceleration structure used
+Accelerator Accel_Struct = BVH_ACC; // acceleration structure used
 BVH* bvh_ptr = nullptr;
 Grid* grid_ptr = nullptr;
 
-float rougness = 0.3f; // rougness used in the fuzzy refletions
+float rougness = 0; // roughness used in the fuzzy reflections
 
-float bias = 0.001f; // Bias used in reflection and refraction calculation
+float bias = 0.001f; // bias used in reflection and refraction calculation
 
-bool skybox = true; // Enable skybox
+bool skybox = false; // enable skybox
 
-bool drawModeEnabled = false; // Enable OpenGL drawing.  
+bool drawModeEnabled = false; // enable OpenGL drawing.  
 
-bool P3F_scene = true; // Choose between P3F scene or a built-in random scene
+bool P3F_scene = true; // choose between P3F scene or a built-in random scene
 
 // Sampling settings
-int n_samples = 8; // Square root of number of samples per pixel
+int n_samples = 1; // square root of number of samples per pixel
 
-int sampler_type = 1; // 0 to regular pixel sampling, 1 to random pixel sampling
+int sampler_type = 0; // 0 to regular pixel sampling, 1 to random pixel sampling
 
 // Light parameters for soft shadows
 // Lights are modeled as an axis aligned rectangle, with the point in the middle
@@ -66,15 +66,15 @@ int sampler_type = 1; // 0 to regular pixel sampling, 1 to random pixel sampling
 #define SHADOW_MODE_WITH_ANTI_ALIASING 2
 #define SHADOW_MODE_WITHOUT_ANTI_ALIASING 3
 
-float lightSize = 0.05f; // Lenght of the light area sides
+float lightSize = 0.05f; // lenght of the light area sides
 int shadowMode = SHADOW_MODE_WITH_ANTI_ALIASING; // Type of shadows used
-size_t numShadowRays = 8; // Number of shadow rays per pixel
+size_t numShadowRays = 1; // number of shadow rays per pixel
 std::default_random_engine shadowPrng(time(NULL) * time(NULL));
 
 // Current Camera Position
 float camX, camY, camZ;
 
-//Original Camera position;
+// Original Camera position;
 Vector Eye;
 
 // Mouse Tracking Variables
@@ -94,10 +94,10 @@ float *vertices;
 int size_vertices;
 int size_colors;
 
-//Array of Pixels to be stored in a file by using DevIL library
+// Array of Pixels to be stored in a file by using DevIL library
 uint8_t *img_Data;
 
-GLfloat m[16];  //projection matrix initialized by ortho function
+GLfloat m[16];  // projection matrix initialized by ortho function
 
 GLuint VaoId;
 GLuint VboId[2];
@@ -110,7 +110,7 @@ int RES_X, RES_Y;
 
 int WindowHandle = 0;
 
-// returns 0.0f for full shadow and 1.0 for full light.
+// Returns 0.0f for full shadow and 1.0 for full light.
 float lightPercentage (Vector interceptPoint, Vector lightPosition, Vector hitNormal) {
 	static std::uniform_real_distribution<> shadowDis(-0.5f, 0.5f);
 
@@ -147,35 +147,34 @@ float lightPercentage (Vector interceptPoint, Vector lightPosition, Vector hitNo
 	return percentage / (float)num_shadow_rays;
 }
 
-float mix (const float& a, const float& b, const float& mix) {
-	return b * mix + a * (1 - mix);
-}
-
+// Calculates the direction of the reflected ray
 Vector reflectDir (Vector& I, Vector& N) {
 	return I - N * 2 * (I*N);
 }
 
+// Calculates the direction of the refracted ray
 Vector refractDir (Vector& I, Vector& N, float& ior) {
 	float cosi = clamp(-1, 1, I*N);
 	float etai = 1, etat = ior;
 	Vector n = N;
-	//ray hits from outside
+	// ray hits from outside
 	if (cosi < 0) { cosi = -cosi; }
-	//ray hits from outside, swap eta and invert normal
+	// ray hits from outside, swap eta and invert normal
 	else { std::swap(etai, etat); n = N*-1.0f; }
 	float eta = etai / etat;
-	//check if there is total reflection, return 0 refraction if true
+	// check if there is total reflection, return 0 refraction if true
 	float k = 1 - eta * eta * (1 - cosi * cosi);
 	return k < 0 ? Vector() : (I * eta) + (n * (eta * cosi - sqrtf(k)));
 }
 
+// Calculates the reflection component kr (refraction component is 1-kr)
 void fresnel (Vector& I, Vector& N, const float& ior, float& kr) {
 	float cosi = clamp(-1, 1, I*N);
 	float etai = 1, etat = ior;
 	if (cosi > 0) { std::swap(etai, etat); }
-	// Compute sini using Snell's law
+	// compute sini using Snell's law
 	float sint = etai / etat * sqrtf(std::max(0.f, 1 - cosi * cosi));
-	// Total internal reflection
+	// total internal reflection
 	if (sint >= 1) kr = 1;
 	else {
 		float cost = sqrtf(std::max(0.f, 1 - sint * sint));
@@ -186,36 +185,25 @@ void fresnel (Vector& I, Vector& N, const float& ior, float& kr) {
 	}
 }
 
-// random vector inside a sphere
-Vector rand_in_unit_sphere() {
-	Vector point = Vector(rand_float(), rand_float(), rand_float());
-	point.normalize();
-	float d = rand_float();
-	point *= d;
-	return point;
-}
-
-
-
 Color rayTracing (Ray ray, int depth, float ior_1) {
 	// intersect ray with all objects and find closest intersection
 	float closest_d = std::numeric_limits<float>::max();
 	Object* hit_obj = NULL;
 	
 	if (Accel_Struct == BVH_ACC) {
-		// do BVH intersection
+		// BVH intersection
 		Vector hit_point;
 		if (bvh_ptr->Traverse(ray, &hit_obj, hit_point)) {
 			closest_d = (hit_point - ray.origin).length();
 		}
 	} else if (Accel_Struct == GRID_ACC) {
-		// TODO do grid acceleration
+		// grid intersection
 		Vector hit_point;
 		if (grid_ptr->Traverse(ray, &hit_obj, hit_point)) {
 			closest_d = (hit_point - ray.origin).length();
 		}
 	} else {
-		// do naive intersection
+		// naive intersection
 		for (int i = 0; i < scene->getNumObjects(); i++) {
 			Object* obj = scene->getObject(i);
 			float d;
@@ -229,25 +217,26 @@ Color rayTracing (Ray ray, int depth, float ior_1) {
 	}
 
 	if (hit_obj == NULL) {
+		// if there is no intersection with an object, get the background or skybox color
 		if (scene->GetSkyBoxFlg() && skybox) return scene->GetSkyboxColor(ray);
 		else return scene->GetBackgroundColor();
 	}
 	else {
-		//compute intercection point and hit normal
+		// compute intercection point and hit normal
 		Vector intercept_point = ray.origin + ray.direction * closest_d;
 		Vector hit_normal = hit_obj->getNormal(intercept_point);
 		Color c;
 
-		//for each light source
+		// for each light source calculate object color
 		for (int l = 0; l < scene->getNumLights(); l++) {
 			Light* source_light = scene->getLight(l);
 			Vector L = (source_light->position - intercept_point).normalize();
 			Vector halfway_vector = (L - ray.direction).normalize();
 
 			if (L * hit_normal > 0) {
-				//diffiuse component
+				// diffuse component
 				Color c_buf = source_light->color * hit_obj->GetMaterial()->GetDiffuse() * max(hit_normal * L, 0.0f) * hit_obj->GetMaterial()->GetDiffColor();
-				//specular component
+				// specular component
 				c_buf += source_light->color * hit_obj->GetMaterial()->GetSpecular() * pow(max(halfway_vector * hit_normal, 0.0f), hit_obj->GetMaterial()->GetShine()) * hit_obj->GetMaterial()->GetSpecColor();
 				c_buf *= lightPercentage(intercept_point, source_light->position, hit_normal);
 				c += c_buf;
@@ -284,7 +273,7 @@ Color rayTracing (Ray ray, int depth, float ior_1) {
 			}
 		}
 
-		//calculate mix result of reflection and refraction
+		//calculate color result of reflection and refraction
 		if (hit_obj->GetMaterial()->GetTransmittance() > 0) {
 			c += (reflection * kr) + (refraction * (1 - kr));
 		} else if (hit_obj->GetMaterial()->GetReflection() > 0)
@@ -477,7 +466,6 @@ void timer(int value)
 }
 
 // Render function by primary ray casting from the eye towards the scene's objects
-
 void renderScene()
 {
 	int index_pos=0;
@@ -500,6 +488,7 @@ void renderScene()
 
 			for (int p = 0; p < n_samples; p++) {
 				for (int q = 0; q < n_samples; q++) {
+					// calculate pixel sample position
 					if (sampler_type == 0) {
 						pixel.x = x + (p + 0.5f) / n_samples;
 						pixel.y = y + (q + 0.5f) / n_samples;
@@ -510,6 +499,7 @@ void renderScene()
 						pixel.y = y + (q + r) / n_samples;
 					}
 
+					// if depth of field is enabled, calculates primary ray using a lens sample and a focal point
 					float aperture = scene->GetCamera()->GetAperture();
 					if (aperture) {
 						Vector samplePoint = sample_unit_disk();
@@ -532,6 +522,7 @@ void renderScene()
 				}
 			}
 			
+			// average color contributions from pixel samples
 			color = color * (1 / pow(n_samples, 2));
 
 			img_Data[counter++] = u8fromfloat((float)color.r());

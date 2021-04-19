@@ -7,16 +7,14 @@
 #include "scene.h"
 
 
-Triangle::Triangle(Vector& P0, Vector& P1, Vector& P2)
-{
+Triangle::Triangle(Vector& P0, Vector& P1, Vector& P2) {
 	points[0] = P0; points[1] = P1; points[2] = P2;
 
-	/* Calculate the normal */
+	// calculate the normal //
 	normal = (P1 - P0) % (P2 - P0);
 	normal.normalize();
 
-
-	//Calculate the Min and Max for bounding box
+	// calculate the Min and Max for bounding box
 	float xmax = P0.x > P1.x ? (P0.x > P2.x ? P0.x : P2.x) : (P1.x > P2.x ? P1.x : P2.x);
 	float ymax = P0.y > P1.y ? (P0.y > P2.y ? P0.y : P2.y) : (P1.y > P2.y ? P1.y : P2.y);
 	float zmax = P0.z > P1.z ? (P0.z > P2.z ? P0.z : P2.z) : (P1.z > P2.z ? P1.z : P2.z);
@@ -28,7 +26,6 @@ Triangle::Triangle(Vector& P0, Vector& P1, Vector& P2)
 	Min = Vector(xmin, ymin, zmin);
 	Max = Vector(xmax, ymax, zmax);
 
-
 	// enlarge the bounding box a bit just in case...
 	Min -= EPSILON;
 	Max += EPSILON;
@@ -38,23 +35,19 @@ AABB Triangle::GetBoundingBox() {
 	return(AABB(Min, Max));
 }
 
-Vector Triangle::getNormal(Vector point)
-{
+Vector Triangle::getNormal(Vector point) {
 	return normal;
 }
 
-//
-// Ray/Triangle intersection test using Tomas Moller-Ben Trumbore algorithm.
-//
-
+// Ray/Triangle intercection
 bool Triangle::intercepts(Ray& r, float& t ) {
 
-	//matrix values
+	// matrix values
 	float a = points[0].x - points[1].x, b = points[0].x - points[2].x, c = r.direction.x, d = points[0].x - r.origin.x;
 	float e = points[0].y - points[1].y, f = points[0].y - points[2].y, g = r.direction.y, h = points[0].y - r.origin.y;
 	float i = points[0].z - points[1].z, j = points[0].z - points[2].z, k = r.direction.z, l = points[0].z - r.origin.z;
 
-	//determinats
+	// determinats
 	float m = f * k - g * j;
 	float n = h * k - g * l;
 	float p = f * l - h * j;
@@ -85,33 +78,22 @@ Plane::Plane(Vector& a_PN, float a_D)
 	: PN(a_PN), D(a_D)
 {}
 
-Plane::Plane(Vector& P0, Vector& P1, Vector& P2)
-{
+Plane::Plane(Vector& P0, Vector& P1, Vector& P2) {
    float l;
-
-   //Calculate the normal plane: counter-clockwise vectorial product.
+   // calculate the normal plane: counter-clockwise vectorial product.
 	PN = (P1 - P0) % (P2 - P0);
-   
 
-   if ((l=PN.length()) == 0.0)
-   {
+   if ((l=PN.length()) == 0.0) {
      cerr << "DEGENERATED PLANE!\n";
-   }
-   else
-   {
+   } else {
      PN.normalize();
-
 	 D = -(PN.x * P0.x + PN.y * P0.y + PN.z * P0.z);
    }
 }
 
-//
-// Ray/Plane intersection test.
-//
-
-bool Plane::intercepts( Ray& r, float& t )
-{
-	//Check if Plane is Parallel to ray
+// Ray/Plane intersection
+bool Plane::intercepts( Ray& r, float& t ) {
+	// check if Plane is parallel to ray
 	if (PN * r.direction == 0) { 
 		return (false);
 	}
@@ -120,36 +102,16 @@ bool Plane::intercepts( Ray& r, float& t )
 
 	t = - ((r.origin - a) * PN) / (PN * r.direction);
 	
-	if (t < 0) {
-		return (false);
-	} 
-   return (true);
+	if (t < 0) return (false);
+	return (true);
 }
 
-Vector Plane::getNormal(Vector point) 
-{
+Vector Plane::getNormal(Vector point) {
   return PN;
 }
 
-bool solveQuadratic(const float& a, const float& b, const float& c, float& x0, float& x1)
-{
-	float discr = b * b - 4 * a * c;
-	if (discr < 0) return false;
-	else if (discr == 0) x0 = x1 = -0.5 * b / a;
-	else {
-		float q = (b > 0) ?
-			-0.5 * (b + sqrt(discr)) :
-			-0.5 * (b - sqrt(discr));
-		x0 = q / a;
-		x1 = c / q;
-	}
-	if (x0 > x1) std::swap(x0, x1);
-
-	return true;
-}
-
-bool Sphere::intercepts(Ray& r, float& t )
-{
+// Ray/Sphere intersection
+bool Sphere::intercepts(Ray& r, float& t ) {
 	float t0, t1;
 	Vector oc = r.origin - center;
 	float a = r.direction * r.direction;
@@ -165,13 +127,11 @@ bool Sphere::intercepts(Ray& r, float& t )
 	}
 
 	t = t0;
-
 	return true;
 }
 
 
-Vector Sphere::getNormal( Vector point )
-{
+Vector Sphere::getNormal( Vector point ) {
 	Vector normal = point - center;
 	return (normal.normalize());
 }
@@ -184,8 +144,8 @@ AABB Sphere::GetBoundingBox() {
 	return(AABB(a_min, a_max));
 }
 
-aaBox::aaBox(Vector& minPoint, Vector& maxPoint) //Axis aligned Box: another geometric object
-{
+// Axis aligned Box: another geometric object
+aaBox::aaBox(Vector& minPoint, Vector& maxPoint) {
 	this->min = minPoint;
 	this->max = maxPoint;
 }
@@ -194,8 +154,7 @@ AABB aaBox::GetBoundingBox() {
 	return(AABB(min, max));
 }
 
-bool aaBox::intercepts(Ray& r, float& t)
-{
+bool aaBox::intercepts(Ray& r, float& t) {
 	float ox = r.origin.x, oy = r.origin.y, oz = r.origin.z;
 	float dx = r.direction.x, dy = r.direction.y, dz = r.direction.z;
 
@@ -275,8 +234,7 @@ bool aaBox::intercepts(Ray& r, float& t)
 }
 
 Vector aaBox::getFaceNormal(int face_hit) {
-	switch (face_hit)
-	{
+	switch (face_hit) {
 	case 0: return (Vector(-1, 0, 0)); //-x face
 	case 1: return (Vector(0, -1, 0)); //-y face
 	case 2: return (Vector(0, 0, -1)); //-z face
@@ -287,9 +245,7 @@ Vector aaBox::getFaceNormal(int face_hit) {
 	}
 }
 
-Vector aaBox::getNormal(Vector point)
-{
-	
+Vector aaBox::getNormal(Vector point) {
 	if (abs(point.x - min.x) < EPSILON) {
 		return getFaceNormal(0);
 	}
@@ -323,47 +279,40 @@ Scene::~Scene()
 	*/
 }
 
-int Scene::getNumObjects()
-{
+int Scene::getNumObjects() {
 	return objects.size();
 }
 
 
-void Scene::addObject(Object* o)
-{
+void Scene::addObject(Object* o) {
 	objects.push_back(o);
 }
 
 
-Object* Scene::getObject(unsigned int index)
-{
+Object* Scene::getObject(unsigned int index) {
 	if (index >= 0 && index < objects.size())
 		return objects[index];
 	return NULL;
 }
 
 
-int Scene::getNumLights()
-{
+int Scene::getNumLights() {
 	return lights.size();
 }
 
 
-void Scene::addLight(Light* l)
-{
+void Scene::addLight(Light* l) {
 	lights.push_back(l);
 }
 
 
-Light* Scene::getLight(unsigned int index)
-{
+Light* Scene::getLight(unsigned int index) {
 	if (index >= 0 && index < lights.size())
 		return lights[index];
 	return NULL;
 }
 
-void Scene::LoadSkybox(const char *sky_dir)
-{
+void Scene::LoadSkybox(const char *sky_dir) {
 	char *filenames[6];
 	char buffer[100];
 	const char *maps[] = { "/right.jpg", "/left.jpg", "/top.jpg", "/bottom.jpg", "/front.jpg", "/back.jpg" };
@@ -498,15 +447,13 @@ Color Scene::GetSkyboxColor(Ray& r) {
 ////////////////////////////////////////////////////////////////////////////////
 // P3F file parsing methods.
 //
-void next_token(ifstream& file, char *token, const char *name)
-{
+void next_token(ifstream& file, char *token, const char *name) {
   file >> token;
   if (strcmp(token, name))
     cerr << "'" << name << "' expected.\n";
 }
 
-bool Scene::load_p3f(const char *name)
-{
+bool Scene::load_p3f(const char *name) {
   const	int	lineSize = 1024;
   string	cmd;
   char		token	[256];
@@ -515,10 +462,8 @@ bool Scene::load_p3f(const char *name)
 
   material = NULL;
 
-  if (file >> cmd)
-  {
-    while (true)
-    {
+  if (file >> cmd) {
+    while (true) {
       
 	  if (cmd == "f")   //Material
       {
