@@ -2,6 +2,7 @@
 #define __MATHS__
 
 #include <stdlib.h>
+#include <cmath>
 
 #define PI				3.141592653589793238462f
 

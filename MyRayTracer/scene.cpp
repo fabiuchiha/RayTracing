@@ -3,6 +3,9 @@
 #include <fstream>
 #include <IL/il.h>
 
+#include <stdlib.h>
+
+
 #include "maths.h"
 #include "scene.h"
 

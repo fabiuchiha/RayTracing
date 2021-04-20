@@ -59,7 +59,6 @@ int n_samples = 1;
 bool P3F_scene = true; // choose between P3F scene or a built-in random scene
 
 // Sampling settings
-int n_samples = 1; // square root of number of samples per pixel
 
 int sampler_type = 0; // 0 to regular pixel sampling, 1 to random pixel sampling
 
