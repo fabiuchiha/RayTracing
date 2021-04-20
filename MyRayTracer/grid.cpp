@@ -335,7 +335,7 @@ bool Grid::Traverse(Ray& ray) {
 		if (objs.size() != 0) 
 			//intersect Ray with all objects of each cell
 			for (auto &obj : objs) {
-				if (obj->intercepts(ray, distance) && distance < length) 
+				if (obj->intercepts(ray, distance) && distance < FLT_MAX) 
 					return true;
 			}
 		

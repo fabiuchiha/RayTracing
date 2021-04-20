@@ -45,7 +45,7 @@ Accelerator Accel_Struct = BVH_ACC; // acceleration structure used
 BVH* bvh_ptr = nullptr;
 Grid* grid_ptr = nullptr;
 
-float rougness = 0; // roughness used in the fuzzy reflections
+float roughness = 0; // roughness used in the fuzzy reflections
 
 float bias = 0.001f; // bias used in reflection and refraction calculation
 
@@ -56,9 +56,9 @@ bool drawModeEnabled = false; // enable OpenGL drawing.
 bool P3F_scene = true; // choose between P3F scene or a built-in random scene
 
 // Sampling settings
-int n_samples = 1; // square root of number of samples per pixel
+int n_samples = 8; // square root of number of samples per pixel
 
-int sampler_type = 0; // 0 to regular pixel sampling, 1 to random pixel sampling
+int sampler_type = 1; // 0 to regular pixel sampling, 1 to random pixel sampling
 
 // Light parameters for soft shadows
 // Lights are modeled as an axis aligned rectangle, with the point in the middle
@@ -68,7 +68,7 @@ int sampler_type = 0; // 0 to regular pixel sampling, 1 to random pixel sampling
 
 float lightSize = 0.05f; // lenght of the light area sides
 int shadowMode = SHADOW_MODE_WITH_ANTI_ALIASING; // Type of shadows used
-size_t numShadowRays = 1; // number of shadow rays per pixel
+size_t numShadowRays = 16; // number of shadow rays per pixel
 std::default_random_engine shadowPrng(time(NULL) * time(NULL));
 
 // Current Camera Position
@@ -159,7 +159,7 @@ Vector refractDir (Vector& I, Vector& N, float& ior) {
 	Vector n = N;
 	// ray hits from outside
 	if (cosi < 0) { cosi = -cosi; }
-	// ray hits from outside, swap eta and invert normal
+	// ray hits from inside, swap eta and invert normal
 	else { std::swap(etai, etat); n = N*-1.0f; }
 	float eta = etai / etat;
 	// check if there is total reflection, return 0 refraction if true
@@ -251,7 +251,7 @@ Color rayTracing (Ray ray, int depth, float ior_1) {
 		Color reflection;
 		if (hit_obj->GetMaterial()->GetReflection() > 0) {
 			// compute reflection direction
-			Vector reflDir = (reflectDir(ray.direction, hit_normal) + rand_in_unit_sphere() * rougness).normalize();
+			Vector reflDir = (reflectDir(ray.direction, hit_normal) + rand_in_unit_sphere() * roughness).normalize();
 			// compute reflection ray
 			Vector reflOrig = outside ? intercept_point + hit_normal * bias : intercept_point - hit_normal * bias;
 			Ray reflectionRay = Ray(reflOrig, reflDir);

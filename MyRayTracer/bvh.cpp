@@ -160,7 +160,6 @@ bool BVH::traverse_recursive(BVHNode* currentNode, Ray& ray, Object** hit_obj, f
 	bool hit = false;
 	tmin = FLT_MAX;  //contains the closest primitive intersection
 
-	//PUT YOUR CODE HERE
 	while (1) {
 		if (currentNode->isLeaf()) {
 			// intersect with all primitives in the leave
