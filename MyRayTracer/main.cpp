@@ -52,6 +52,9 @@ float bias = 0.001f; // bias used in reflection and refraction calculation
 bool skybox = false; // enable skybox
 
 bool drawModeEnabled = false; // enable OpenGL drawing.  
+// sampling settings
+// square root of number of samples per pixel
+int n_samples = 1;
 
 bool P3F_scene = true; // choose between P3F scene or a built-in random scene
 
@@ -480,9 +483,19 @@ void renderScene()
 	shadowPrng.seed(time(NULL) * time(NULL));
 	set_rand_seed(time(NULL) * time(NULL));
 
-	for (int y = 0; y < RES_Y; y++) {
-		for (int x = 0; x < RES_X; x++) {
+	int percentage = 0;
+	for (int y = 0; y < RES_Y; y++)
+	{
+		if (!drawModeEnabled) {
+			int new_percentage = (y * 100) / RES_Y;
+			if (new_percentage > percentage) {
+				percentage = new_percentage;
+				std::cout << percentage << " %" << std::endl;
+			}
+		}
 
+		for (int x = 0; x < RES_X; x++)
+		{
 			Color color; 
 			Vector pixel;  //viewport coordinates
 
@@ -860,7 +873,8 @@ int main(int argc, char* argv[])
 			cout << "\nPress 'y' to render another image or another key to terminate!\n";
 			delete(scene);
 			free(img_Data);
-			ch = _getch();
+			break;
+			//ch = _getch();
 		} while((toupper(ch) == 'Y')) ;
 	}
 
