@@ -49,12 +49,9 @@ float roughness = 0; // roughness used in the fuzzy reflections
 
 float bias = 0.001f; // bias used in reflection and refraction calculation
 
-bool skybox = false; // enable skybox
+bool skybox = true; // enable skybox
 
 bool drawModeEnabled = false; // enable OpenGL drawing.  
-// sampling settings
-// square root of number of samples per pixel
-int n_samples = 1;
 
 bool P3F_scene = true; // choose between P3F scene or a built-in random scene
 
