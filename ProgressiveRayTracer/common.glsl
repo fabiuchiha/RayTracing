@@ -171,7 +171,23 @@ struct HitRecord {
 
 
 float schlick(float cosine, float refIdx) {
-    return 1.0;
+    // Schlick aproximation
+    float n1 = 1.0; //air ior
+    float n2 = refIdx; //material ior
+
+    float r0 = (n1-n2) / (n1+n2);
+    r0 *= r0;
+    if (n1 > n2) {
+        float n = n1/n2;
+        float sinT2 = n*n*(1.0-cosine*cosine);
+        // Total internal reflection
+        if (sinT2 > 1.0)
+            return 1.0;
+        cosine = sqrt(1.0-sinT2);
+    }
+    float x = 1.0-cosine;
+    float ret = r0+(1.0-r0)*x*x*x*x*x;
+    return ret;
 }
 
 bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered) {
