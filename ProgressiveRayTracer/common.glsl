@@ -290,10 +290,10 @@ bool hit_triangle(Triangle t, Ray r, float tmin, float tmax, out HitRecord rec) 
 
 	if (beta + gamma > 1.0f) return false;
 
-	t = (a * p - b * extra + d * s) / denom;
+	float dist = (a * p - b * extra + d * s) / denom;
 
-    if(t < tmax && t > tmin) {
-        rec.t = t;
+    if(dist < tmax && dist > tmin) {
+        rec.t = dist;
         rec.normal = normal;
         rec.pos = pointOnRay(r, rec.t);
         return true;
