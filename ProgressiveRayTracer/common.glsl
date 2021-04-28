@@ -332,7 +332,7 @@ MovingSphere createMovingSphere(vec3 center0, vec3 center1, float radius, float 
 }
 
 vec3 center(MovingSphere mvsphere, float time) {
-    return moving_center;
+    return center0 + ((time - time0) / (time1 - time0)) * (center1 - center0);
 }
 
 
@@ -401,12 +401,6 @@ bool hit_movingSphere(MovingSphere s, Ray r, float tmin, float tmax, out HitReco
      //Calculate the moving center
     //calculate a valid t and normal
 	
-    if(t < tmax && t > tmin) {
-        rec.t = t;
-        rec.pos = pointOnRay(r, rec.t);
-        rec.normal = normal;
-        return true;
-    }
-    else return false;
+    return false;
     
 }
