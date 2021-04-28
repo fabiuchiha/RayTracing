@@ -341,17 +341,54 @@ vec3 center(MovingSphere mvsphere, float time) {
  * the book's notion of "hittable". E.g. hit_<type>.
  */
 
-bool hit_sphere(Sphere s, Ray r, float tmin, float tmax, out HitRecord rec) {
-    //INSERT YOUR CODE HERE
-    //calculate a valid t and normal
-	
-    if(t < tmax && t > tmin) {
-        rec.t = t;
-        rec.pos = pointOnRay(r, rec.t);
-        rec.normal = normal
-        return true;
+ bool solveQuadratic(float a, float b, float c, float x0, float x1) {
+	float discr = b * b - 4.0 * a * c;
+	if (discr < 0.0) return false;
+	else if (discr == 0.0) x0 = x1 = -0.5 * b / a;
+	else {
+		float q = (b > 0.0) ?
+			-0.5 * (b + sqrt(discr)) :
+			-0.5 * (b - sqrt(discr));
+		x0 = q / a;
+		x1 = c / q;
+	}
+	if (x0 > x1) {
+        float temp = x0;
+        x0 = x1;
+        x1 = temp;
     }
-    else return false;
+	return true;
+}
+
+bool hit_sphere(Sphere s, Ray r, float tmin, float tmax, out HitRecord rec) {
+    // Intersection check
+    float t0, t1;
+	vec3 oc = r.o - s.center;
+	float a = dot(r.d, r.d);
+	float b = dot(oc,r.d)*2.0;
+	float c = dot(oc,oc) - s.radius;
+
+	if (!solveQuadratic(a, b, c, t0, t1)) return false;
+	if (t0 > t1) {
+        float temp = t0;
+        t0 = t1;
+        t1 = temp;
+    }
+
+	if (t0 < 0.0) {
+		t0 = t1; // if t0 is negative, let's use t1 instead 
+		if (t0 < 0.0) return false; // both t0 and t1 are negative 
+	}
+
+	float t = t0;
+    rec.t = t;
+    rec.pos = pointOnRay(r, rec.t);
+
+    //Normal calculation
+    vec3 intercept_point = r.o + r.d * t;
+    vec3 normal = normalize(s.center - intercept_point);
+    rec.normal = normal;
+	return true;
 }
 
 bool hit_movingSphere(MovingSphere s, Ray r, float tmin, float tmax, out HitRecord rec) {
