@@ -12,8 +12,7 @@ struct Ray {
     float t;    // time, for motion blur
 };
 
-Ray createRay(vec3 o, vec3 d, float t)
-{
+Ray createRay(vec3 o, vec3 d, float t) {
     Ray r;
     r.o = o;
     r.d = d;
@@ -21,20 +20,17 @@ Ray createRay(vec3 o, vec3 d, float t)
     return r;
 }
 
-Ray createRay(vec3 o, vec3 d)
-{
+Ray createRay(vec3 o, vec3 d) {
     return createRay(o, d, 0.0);
 }
 
-vec3 pointOnRay(Ray r, float t)
-{
+vec3 pointOnRay(Ray r, float t) {
     return r.o + r.d * t;
 }
 
 float gSeed = 0.0;
 
-uint baseHash(uvec2 p)
-{
+uint baseHash(uvec2 p) {
     p = 1103515245U * ((p >> 1U) ^ (p.yx));
     uint h32 = 1103515245U * ((p.x) ^ (p.y>>3U));
     return h32 ^ (h32 >> 16);
@@ -51,25 +47,21 @@ vec2 hash2(inout float seed) {
     return vec2(rz.xy & uvec2(0x7fffffffU)) / float(0x7fffffff);
 }
 
-vec3 hash3(inout float seed)
-{
+vec3 hash3(inout float seed) {
     uint n = baseHash(floatBitsToUint(vec2(seed += 0.1, seed += 0.1)));
     uvec3 rz = uvec3(n, n * 16807U, n * 48271U);
     return vec3(rz & uvec3(0x7fffffffU)) / float(0x7fffffff);
 }
 
-float rand(vec2 v)
-{
+float rand(vec2 v) {
     return fract(sin(dot(v.xy, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
-vec3 toLinear(vec3 c)
-{
+vec3 toLinear(vec3 c) {
     return pow(c, vec3(2.2));
 }
 
-vec3 toGamma(vec3 c)
-{
+vec3 toGamma(vec3 c) {
     return pow(c, vec3(1.0 / 2.2));
 }
 
@@ -80,16 +72,14 @@ vec2 randomInUnitDisk(inout float seed) {
 	return r * vec2(sin(phi), cos(phi));
 }
 
-vec3 randomInUnitSphere(inout float seed)
-{
+vec3 randomInUnitSphere(inout float seed) {
     vec3 h = hash3(seed) * vec3(2.0, 6.28318530718, 1.0) - vec3(1.0, 0.0, 0.0);
     float phi = h.y;
     float r = pow(h.z, 1.0/3.0);
 	return r * vec3(sqrt(1.0 - h.x * h.x) * vec2(sin(phi), cos(phi)), h.x);
 }
 
-struct Camera
-{
+struct Camera {
     vec3 eye;
     vec3 u, v, n;
     float width, height;
@@ -127,17 +117,13 @@ Camera createCamera(
     return cam;
 }
 
-Ray getRay(Camera cam, vec2 pixel_sample)  //rnd pixel_sample viewport coordinates
-{
+Ray getRay(Camera cam, vec2 pixel_sample) { //rnd pixel_sample viewport coordinates
     vec2 ls = cam.lensRadius * randomInUnitDisk(gSeed);  //ls - lens sample for DOF
     float time = cam.time0 + hash1(gSeed) * (cam.time1 - cam.time0);
 
-    //Calculate eye_offset and ray direction
-    vec3 ray_dir = (cam.u*((pixel_sample.x - ls.x) / iResolution.x - 0.5f)*cam.width + cam.v*((pixel_sample.y - ls.y) / iResolution.y - 0.5f)*cam.height - cam.n*cam.focusDist);
-	
+    vec3 ray_dir = (cam.u*((pixel_sample.x - ls.x) / iResolution.x - 0.5f)*cam.width + cam.v*((pixel_sample.y - ls.y) / iResolution.y - 0.5f)*cam.height - cam.n*cam.focusDist);	
     vec3 eye_offset = cam.eye + cam.u*ls.x + cam.v*ls.y;
     
-
     return createRay(eye_offset, normalize(ray_dir), time);
 }
 
@@ -146,24 +132,21 @@ Ray getRay(Camera cam, vec2 pixel_sample)  //rnd pixel_sample viewport coordinat
 #define MT_METAL 1
 #define MT_DIALECTRIC 2
 
-struct Material
-{
+struct Material {
     int type;
     vec3 albedo;
     float roughness; // controls roughness for metals
     float refIdx; // index of refraction for dialectric
 };
 
-Material createDiffuseMaterial(vec3 albedo)
-{
+Material createDiffuseMaterial(vec3 albedo) {
     Material m;
     m.type = MT_DIFFUSE;
     m.albedo = albedo;
     return m;
 }
 
-Material createMetalMaterial(vec3 albedo, float roughness)
-{
+Material createMetalMaterial(vec3 albedo, float roughness) {
     Material m;
     m.type = MT_METAL;
     m.albedo = albedo;
@@ -171,8 +154,7 @@ Material createMetalMaterial(vec3 albedo, float roughness)
     return m;
 }
 
-Material createDialectricMaterial(vec3 albedo, float refIdx)
-{
+Material createDialectricMaterial(vec3 albedo, float refIdx) {
     Material m;
     m.type = MT_DIALECTRIC;
     m.albedo = albedo;
@@ -180,8 +162,7 @@ Material createDialectricMaterial(vec3 albedo, float refIdx)
     return m;
 }
 
-struct HitRecord
-{
+struct HitRecord {
     vec3 pos;
     vec3 normal;
     float t;            // ray parameter
@@ -189,40 +170,33 @@ struct HitRecord
 };
 
 
-float schlick(float cosine, float refIdx)
-{
-    //INSERT YOUR CODE HERE
+float schlick(float cosine, float refIdx) {
+    return 1.0;
 }
 
-bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered)
-{
-    if(rec.material.type == MT_DIFFUSE)
-    {
+bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered) {
+    if(rec.material.type == MT_DIFFUSE) {
         //INSERT CODE HERE,
         atten = rec.material.albedo * max(dot(rScattered.d, rec.normal), 0.0) / pi;
         return true;
     }
-    if(rec.material.type == MT_METAL)
-    {
+    if(rec.material.type == MT_METAL) {
        //INSERT CODE HERE, consider fuzzy reflections
         atten = rec.material.albedo;
         return true;
     }
-    if(rec.material.type == MT_DIALECTRIC)
-    {
+    if(rec.material.type == MT_DIALECTRIC) {
         atten = rec.material.albedo;
         vec3 outwardNormal;
         float niOverNt;
         float cosine;
 
-        if(dot(rIn.d, rec.normal) > 0.0) //hit inside
-        {
+        if(dot(rIn.d, rec.normal) > 0.0) { //hit inside
             outwardNormal = -rec.normal;
             niOverNt = rec.material.refIdx;
             cosine = rec.material.refIdx * dot(rIn.d, rec.normal); 
         }
-        else  //hit from outside
-        {
+        else { 
             outwardNormal = rec.normal;
             niOverNt = 1.0 / rec.material.refIdx;
             cosine = -dot(rIn.d, rec.normal); 
@@ -235,7 +209,7 @@ bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered)
         //if no total reflection  reflectProb = schlick(cosine, rec.material.refIdx);  
         //else reflectProb = 1.0;
 
-        if( hash1(gSeed) < reflectProb)  //Reflection
+        if( hash1(gSeed) < reflectProb) { //Reflection
         // rScattered = calculate reflected ray
           // atten *= vec3(reflectProb); not necessary since we are only scattering reflectProb rays and not all reflected rays
         
@@ -254,8 +228,7 @@ struct pointLight {
     vec3 color;
 };
 
-pointLight createPointLight(vec3 pos, vec3 color) 
-{
+pointLight createPointLight(vec3 pos, vec3 color) {
     pointLight l;
     l.pos = pos;
     l.color = color;
@@ -264,15 +237,13 @@ pointLight createPointLight(vec3 pos, vec3 color)
 
 struct Triangle {vec3 a; vec3 b; vec3 c; };
 
-Triangle createTriangle(vec3 v0, vec3 v1, vec3 v2)
-{
+Triangle createTriangle(vec3 v0, vec3 v1, vec3 v2) {
     Triangle t;
     t.a = v0; t.b = v1; t.c = v2;
     return t;
 }
 
-bool hit_triangle(Triangle t, Ray r, float tmin, float tmax, out HitRecord rec)
-{
+bool hit_triangle(Triangle t, Ray r, float tmin, float tmax, out HitRecord rec) {
     // create the normal
     vec3 ba = t.b - t.a;
     vec3 ca = t.c - t.a;
@@ -305,8 +276,7 @@ bool hit_triangle(Triangle t, Ray r, float tmin, float tmax, out HitRecord rec)
 
 	t = (a * p - b * extra + d * s) / denom;
 
-    if(t < tmax && t > tmin)
-    {
+    if(t < tmax && t > tmin) {
         rec.t = t;
         rec.normal = normal;
         rec.pos = pointOnRay(r, rec.t);
@@ -316,14 +286,12 @@ bool hit_triangle(Triangle t, Ray r, float tmin, float tmax, out HitRecord rec)
 }
 
 
-struct Sphere
-{
+struct Sphere {
     vec3 center;
     float radius;
 };
 
-Sphere createSphere(vec3 center, float radius)
-{
+Sphere createSphere(vec3 center, float radius) {
     Sphere s;
     s.center = center;
     s.radius = radius;
@@ -331,15 +299,13 @@ Sphere createSphere(vec3 center, float radius)
 }
 
 
-struct MovingSphere
-{
+struct MovingSphere {
     vec3 center0, center1;
     float radius;
     float time0, time1;
 };
 
-MovingSphere createMovingSphere(vec3 center0, vec3 center1, float radius, float time0, float time1)
-{
+MovingSphere createMovingSphere(vec3 center0, vec3 center1, float radius, float time0, float time1) {
     MovingSphere s;
     s.center0 = center0;
     s.center1 = center1;
@@ -349,8 +315,7 @@ MovingSphere createMovingSphere(vec3 center0, vec3 center1, float radius, float 
     return s;
 }
 
-vec3 center(MovingSphere mvsphere, float time)
-{
+vec3 center(MovingSphere mvsphere, float time) {
     return moving_center;
 }
 
@@ -360,8 +325,7 @@ vec3 center(MovingSphere mvsphere, float time)
  * the book's notion of "hittable". E.g. hit_<type>.
  */
 
-bool hit_sphere(Sphere s, Ray r, float tmin, float tmax, out HitRecord rec)
-{
+bool hit_sphere(Sphere s, Ray r, float tmin, float tmax, out HitRecord rec) {
     //INSERT YOUR CODE HERE
     //calculate a valid t and normal
 	
@@ -374,8 +338,7 @@ bool hit_sphere(Sphere s, Ray r, float tmin, float tmax, out HitRecord rec)
     else return false;
 }
 
-bool hit_movingSphere(MovingSphere s, Ray r, float tmin, float tmax, out HitRecord rec)
-{
+bool hit_movingSphere(MovingSphere s, Ray r, float tmin, float tmax, out HitRecord rec) {
     float B, C, delta;
     bool outside;
     float t;
