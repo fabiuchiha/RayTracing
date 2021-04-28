@@ -269,8 +269,38 @@ Triangle createTriangle(vec3 v0, vec3 v1, vec3 v2)
 
 bool hit_triangle(Triangle t, Ray r, float tmin, float tmax, out HitRecord rec)
 {
-    //INSERT YOUR CODE HERE
-    //calculate a valid t and normal
+    // create the normal
+    vec3 d1 = t.b - t.a;
+    vec3 d2 = t.c - t.a;
+    vec3 normal = cross(d1, d2);
+    
+    // matrix values
+	float a = t.a.x - t.b.x, b = t.a.x - t.c.x, c = r.d.x, d = t.a.x - r.o.x;
+	float e = t.a.y - t.b.y, f = t.a.y - t.c.y, g = r.d.y, h = t.a.y - r.o.y;
+	float i = t.a.z - t.b.z, j = t.a.z - t.c.z, k = r.d.z, l = t.a.z - r.o.z;
+
+	// determinats
+	float m = f * k - g * j;
+	float n = h * k - g * l;
+	float p = f * l - h * j;
+	float q = g * i - e * k;
+	float s = e * j - f * i;
+
+    float denom = (a * m + b * q + c * s);
+
+	float beta = (d * m - b * n - c * p ) / denom;
+
+	if (beta < 0.0f) return false;
+
+	float extra = e * l - h * i;
+	float gamma = ( a * n + d * q + c * extra) / denom;
+
+	if (gamma < 0.0f) return false;
+
+	if (beta + gamma > 1.0f) return false;
+
+	t = (a * p - b * extra + d * s) / denom;
+
     if(t < tmax && t > tmin)
     {
         rec.t = t;
