@@ -131,10 +131,14 @@ Ray getRay(Camera cam, vec2 pixel_sample)  //rnd pixel_sample viewport coordinat
 {
     vec2 ls = cam.lensRadius * randomInUnitDisk(gSeed);  //ls - lens sample for DOF
     float time = cam.time0 + hash1(gSeed) * (cam.time1 - cam.time0);
-    
-    //Calculate eye_offset and ray direction
 
-    return createRay(eye_offset, normalize(ray direction), time);
+    //Calculate eye_offset and ray direction
+    vec3 ray_dir = (cam.u*((pixel_sample.x - ls.x) / iResolution.x - 0.5f)*cam.width + cam.v*((pixel_sample.y - ls.y) / iResolution.y - 0.5f)*cam.height - cam.n*cam.focusDist);
+	
+    vec3 eye_offset = cam.eye + cam.u*ls.x + cam.v*ls.y;
+    
+
+    return createRay(eye_offset, normalize(ray_dir), time);
 }
 
 // MT_ material type
@@ -270,9 +274,9 @@ Triangle createTriangle(vec3 v0, vec3 v1, vec3 v2)
 bool hit_triangle(Triangle t, Ray r, float tmin, float tmax, out HitRecord rec)
 {
     // create the normal
-    vec3 d1 = t.b - t.a;
-    vec3 d2 = t.c - t.a;
-    vec3 normal = cross(d1, d2);
+    vec3 ba = t.b - t.a;
+    vec3 ca = t.c - t.a;
+    vec3 normal = cross(ba, ca);
     
     // matrix values
 	float a = t.a.x - t.b.x, b = t.a.x - t.c.x, c = r.d.x, d = t.a.x - r.o.x;
