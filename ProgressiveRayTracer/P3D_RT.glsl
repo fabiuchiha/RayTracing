@@ -174,7 +174,7 @@ vec3 directlighting(pointLight pl, Ray r, HitRecord rec){
     Ray shadowRay = createRay(rec.pos + epsilon * rec.normal, l);
 
     if (intensity > 0.0) {
-        if (!hit_world(shadowRay, 0.0, lenght(pl.pos - rec.pos), dummy)) {
+        if (!hit_world(shadowRay, 0.0, length(pl.pos - rec.pos), dummy)) {
             if (rec.material.type == MT_DIFFUSE) {
                diffCol = rec.material.albedo / pi * intensity;
                specCol = vec3(0.1, 0.1, 0.1);
