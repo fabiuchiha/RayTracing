@@ -191,10 +191,10 @@ vec3 directlighting(pointLight pl, Ray r, HitRecord rec){
                 shininess = 500.0;
             }
 
-            vec3 h = normalize(l - r.d.);
+            vec3 h = normalize(l - r.d);
             float intSpec = max(dot(h, rec.normal), 0.0);
             vec3 spec = specCol * pow(intSpec, shininess);
-            colorOut = (diffCol + sepc) * pl.color;
+            colorOut = (diffCol + spec) * pl.color;
        }
     }
     
@@ -212,7 +212,7 @@ vec3 rayColor(Ray r) {
         if(hit_world(r, 0.001, 10000.0, rec)) {
 
             //calculate direct lighting with 3 white point lights:
-            bool outside = dot(r.d. rec.normal) < 0.0;
+            bool outside = dot(r.d, rec.normal) < 0.0;
             if (outside) {
                 col += directlighting(createPointLight(vec3(-10.0, 15.0, 0.0), vec3(1.0, 1.0, 1.0)), r, rec) * throughput;
                 col += directlighting(createPointLight(vec3(8.0, 15.0, 3.0), vec3(1.0, 1.0, 1.0)), r, rec) * throughput;
