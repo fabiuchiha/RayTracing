@@ -270,7 +270,7 @@ bool hit_triangle(Triangle t, Ray r, float tmin, float tmax, out HitRecord rec) 
     // create the normal
     vec3 ba = t.b - t.a;
     vec3 ca = t.c - t.a;
-    vec3 normal = cross(ba, ca);
+    vec3 normal = normalize(cross(ba, ca));
     
     // matrix values
 	float a = t.a.x - t.b.x, b = t.a.x - t.c.x, c = r.d.x, d = t.a.x - r.o.x;
@@ -348,7 +348,7 @@ vec3 center(MovingSphere mvsphere, float time) {
  * the book's notion of "hittable". E.g. hit_<type>.
  */
 
- bool solveQuadratic(float a, float b, float c, float x0, float x1) {
+ bool solveQuadratic(float a, float b, float c, out float x0, out float x1) {
 	float discr = b * b - 4.0 * a * c;
 	if (discr < 0.0) return false;
 	else if (discr == 0.0) x0 = x1 = -0.5 * b / a;
@@ -398,16 +398,34 @@ bool hit_sphere(Sphere s, Ray r, float tmin, float tmax, out HitRecord rec) {
 	return true;
 }
 
-bool hit_movingSphere(MovingSphere s, Ray r, float tmin, float tmax, out HitRecord rec) {
-    float B, C, delta;
-    bool outside;
-    float t;
+/*bool hit_movingSphere(MovingSphere s, Ray r, float tmin, float tmax, out HitRecord rec) {
+    // Intersection check
+    float t0, t1;
+    vec3 center = s.center(s,);
+	vec3 oc = r.o - center;
+	float a = dot(r.d, r.d);
+	float b = dot(oc,r.d)*2.0;
+	float c = dot(oc,oc) - s.radius;
 
+	if (!solveQuadratic(a, b, c, t0, t1)) return false;
+	if (t0 > t1) {
+        float temp = t0;
+        t0 = t1;
+        t1 = temp;
+    }
 
-     //INSERT YOUR CODE HERE
-     //Calculate the moving center
-    //calculate a valid t and normal
-	
-    return false;
-    
-}
+	if (t0 < 0.0) {
+		t0 = t1; // if t0 is negative, let's use t1 instead 
+		if (t0 < 0.0) return false; // both t0 and t1 are negative 
+	}
+
+	float t = t0;
+    rec.t = t;
+    rec.pos = pointOnRay(r, rec.t);
+
+    //Normal calculation
+    vec3 intercept_point = r.o + r.d * t;
+    vec3 normal = normalize(center - intercept_point);
+    rec.normal = normal;
+	return true;
+}*/

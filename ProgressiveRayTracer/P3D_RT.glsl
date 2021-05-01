@@ -7,18 +7,25 @@
  #include "./common.glsl"
  #iChannel0 "self"
 
-bool hit_world(Ray r, float tmin, float tmax, out HitRecord rec)
-{
+bool hit_world(Ray r, float tmin, float tmax, out HitRecord rec) {
     bool hit = false;
     rec.t = tmax;
    
-    if(hit_triangle(createTriangle(vec3(-10.0, -0.01, 10.0), vec3(10.0, -0.01, 10.0), vec3(-10.0, -0.01, -10.0)), r, tmin, rec.t, rec))
+    if(hit_triangle(createTriangle(vec3(-10.0, -0.01, 10.0), vec3(10.0, -0.01, 10.0), vec3(-10.0, -0.01, -10.0)),
+        r, 
+        tmin, 
+        rec.t, 
+        rec)) 
     {
         hit = true;
         rec.material = createDiffuseMaterial(vec3(0.2));
     }
 
-    if(hit_triangle(createTriangle(vec3(-10.0, -0.01, -10.0), vec3(10.0, -0.01, 10), vec3(10.0, -0.01, -10.0)), r, tmin, rec.t, rec))
+    if(hit_triangle(createTriangle(vec3(-10.0, -0.01, -10.0), vec3(10.0, -0.01, 10), vec3(10.0, -0.01, -10.0)), 
+        r, 
+        tmin, 
+        rec.t, 
+        rec)) 
     {
         hit = true;
         rec.material = createDiffuseMaterial(vec3(0.2));
@@ -58,7 +65,7 @@ bool hit_world(Ray r, float tmin, float tmax, out HitRecord rec)
         rec.material = createDialectricMaterial(vec3(1.0), 1.5);
     }
 
-if(hit_sphere(
+    if(hit_sphere(
         createSphere(vec3(0.0, 1.0, 0.0), -0.95),
         r,
         tmin,
@@ -87,7 +94,7 @@ if(hit_sphere(
                 {
                     vec3 center1 = center + vec3(0.0, hash1(gSeed) * 0.5, 0.0);
                     // diffuse
-                    if(hit_movingSphere(
+                    /*if(hit_movingSphere(
                         createMovingSphere(center, center1, 0.2, 0.0, 1.0),
                         r,
                         tmin,
@@ -96,7 +103,7 @@ if(hit_sphere(
                     {
                         hit = true;
                         rec.material = createDiffuseMaterial(hash3(seed) * hash3(seed));
-                    }
+                    }*/
                 }
                 else if(chooseMaterial < 0.5)
                 {
@@ -169,9 +176,9 @@ vec3 directlighting(pointLight pl, Ray r, HitRecord rec){
     float shininess;
     HitRecord dummy;
 
-    vec3 l = normalize(pl.pos - rec.pos);
-    float intensity = max(dot(rec.normal, l), 0.0);
-    Ray shadowRay = createRay(rec.pos + epsilon * rec.normal, l);
+    vec3 light = normalize(pl.pos - rec.pos);
+    float intensity = max(dot(rec.normal, light), 0.0);
+    Ray shadowRay = createRay(rec.pos + epsilon * rec.normal, light);
 
     if (intensity > 0.0) {
         if (!hit_world(shadowRay, 0.0, length(pl.pos - rec.pos), dummy)) {
@@ -191,8 +198,8 @@ vec3 directlighting(pointLight pl, Ray r, HitRecord rec){
                 shininess = 500.0;
             }
 
-            vec3 h = normalize(l - r.d);
-            float intSpec = max(dot(h, rec.normal), 0.0);
+            vec3 halfwayVector = normalize(light - r.d);
+            float intSpec = max(dot(halfwayVector, rec.normal), 0.0);
             vec3 spec = specCol * pow(intSpec, shininess);
             colorOut = (diffCol + spec) * pl.color;
        }
@@ -240,8 +247,7 @@ vec3 rayColor(Ray r) {
 
 #define MAX_SAMPLES 10000.0
 
-void main()
-{
+void main() {
     gSeed = float(baseHash(floatBitsToUint(gl_FragCoord.xy))) / float(0xffffffffU) + iTime;
 
     vec2 mouse = iMouse.xy / iResolution.xy;
