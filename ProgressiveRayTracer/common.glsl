@@ -390,10 +390,12 @@ bool hit_sphere(Sphere s, Ray r, float tmin, float tmax, out HitRecord rec) {
     } else return false;
 }
 
-/*bool hit_movingSphere(MovingSphere s, Ray r, float tmin, float tmax, out HitRecord rec) {
+bool hit_movingSphere(MovingSphere s, Ray r, float tmin, float tmax, out HitRecord rec) {
     // Intersection check
     float t0, t1;
-    vec3 center = s.center(s, iTime);
+    float time = iTimeDelta;
+    vec3 center = center(s, time);
+
 	vec3 oc = r.o - center;
 	float a = dot(r.d, r.d);
 	float b = dot(oc,r.d)*2.0;
@@ -419,4 +421,4 @@ bool hit_sphere(Sphere s, Ray r, float tmin, float tmax, out HitRecord rec) {
         rec.normal = normal;
         return true;
     } else return false;
-}*/
+}
