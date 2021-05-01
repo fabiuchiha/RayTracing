@@ -193,6 +193,10 @@ float schlick(float cosine, float refIdx) {
 bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered) {
     if(rec.material.type == MT_DIFFUSE) {
         //INSERT CODE HERE,
+
+        rScattered.d = rec.pos + rec.normal + normalize(randomInUnitSphere(gSeed));
+        rScattered.o = rec.pos;
+        
         atten = rec.material.albedo * max(dot(rScattered.d, rec.normal), 0.0) / pi;
         return true;
     }
