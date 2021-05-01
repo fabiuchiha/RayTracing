@@ -50,7 +50,7 @@ bool Triangle::intercepts(Ray& r, float& t ) {
 	float e = points[0].y - points[1].y, f = points[0].y - points[2].y, g = r.direction.y, h = points[0].y - r.origin.y;
 	float i = points[0].z - points[1].z, j = points[0].z - points[2].z, k = r.direction.z, l = points[0].z - r.origin.z;
 
-	// determinats
+	// determinants
 	float m = f * k - g * j;
 	float n = h * k - g * l;
 	float p = f * l - h * j;
