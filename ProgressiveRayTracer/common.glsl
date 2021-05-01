@@ -196,12 +196,15 @@ bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered) {
 
         rScattered.d = rec.pos + rec.normal + normalize(randomInUnitSphere(gSeed));
         rScattered.o = rec.pos;
-        
+
         atten = rec.material.albedo * max(dot(rScattered.d, rec.normal), 0.0) / pi;
         return true;
     }
     if(rec.material.type == MT_METAL) {
        //INSERT CODE HERE, consider fuzzy reflections
+        rScattered.d = rec.pos + rec.normal + normalize(randomInUnitSphere(gSeed));
+        rScattered.o = rec.pos;
+        
         atten = rec.material.albedo;
         return true;
     }
