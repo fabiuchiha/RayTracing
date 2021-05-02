@@ -81,6 +81,9 @@ vec3 randomInUnitSphere(inout float seed) {
 
 struct Camera {
     vec3 eye;
+    vec3 lowerLeftCorner;
+    vec3 horizontal;
+    vec3 vertical;
     vec3 u, v, n;
     float width, height;
     float lensRadius;
@@ -104,7 +107,7 @@ Camera createCamera(
     else cam.focusDist = focusDist;
     vec3 w = eye - at;
     cam.planeDist = length(w);
-    cam.height = 2.0 * cam.planeDist * tan(fovy * pi / 180.0 * 0.5);
+    cam.height = 2.0 * tan(fovy * pi / 180.0 * 0.5);
     cam.width = aspect * cam.height;
 
     cam.lensRadius = aperture * 0.5 * cam.width / iResolution.x;  //aperture ratio * pixel size; (1 pixel=lente raio 0.5)
@@ -114,6 +117,10 @@ Camera createCamera(
     cam.v = cross(cam.n, cam.u);
     cam.time0 = time0;
     cam.time1 = time1;
+
+    cam.horizontal = cam.width * cam.focusDist * cam.u;
+    cam.vertical = cam.height * cam.focusDist * cam.v;
+    cam.lowerLeftCorner = cam.eye - cam.horizontal/2.0 - cam.vertical/2.0 - cam.focusDist*cam.n;
     return cam;
 }
 
@@ -123,11 +130,12 @@ Ray getRay(Camera cam, vec2 pixel_sample) { //rnd pixel_sample viewport coordina
     // Time for motion blur
     float time = cam.time0 + hash1(gSeed) * (cam.time1 - cam.time0);
     // New ray origin with lens sample offset
-    vec3 eye_offset = cam.eye + cam.u*ls.x + cam.v*ls.y;
+    vec3 offset = cam.u * ls.x + cam.v * ls.y;
     // Ray direction from lens sample to projected sample point
-    vec3 ray_dir = (cam.u*((pixel_sample.x - ls.x) / iResolution.x - 0.5f)*cam.width + cam.v*((pixel_sample.y - ls.y) / iResolution.y - 0.5f)*cam.height - cam.n*cam.focusDist);	
+    //vec3 ray_dir = (cam.u*((pixel_sample.x - ls.x) / iResolution.x - 0.5f)*cam.width + cam.v*((pixel_sample.y - ls.y) / iResolution.y - 0.5f)*cam.height - cam.n*cam.focusDist);	
+    vec3 ray_dir = cam.lowerLeftCorner + (pixel_sample.x * cam.horizontal / iResolution.x)  + (pixel_sample.y * cam.vertical / iResolution.y) - cam.eye - offset;
     
-    return createRay(eye_offset, normalize(ray_dir), time);
+    return createRay(cam.eye + offset, normalize(ray_dir), time);
 }
 
 // MT_ material type

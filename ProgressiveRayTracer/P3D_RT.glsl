@@ -256,9 +256,9 @@ void main() {
 
     vec3 camPos = vec3(mouse.x * 10.0, mouse.y * 5.0, 8.0);
     vec3 camTarget = vec3(0.0, 0.0, -1.0);
-    float fovy = 10.0;
+    float fovy = 60.0;
     float aperture = 0.0;
-    float distToFocus = 2.00;
+    float distToFocus = 1.75;
     float time0 = 0.0;
     float time1 = 1.0;
     Camera cam = createCamera(
