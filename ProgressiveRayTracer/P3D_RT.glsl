@@ -171,62 +171,64 @@ bool hit_world(Ray r, float tmin, float tmax, out HitRecord rec) {
 }
 
 vec3 directlighting(pointLight pl, Ray r, HitRecord rec){
-    vec3 diffCol, specCol;
+    vec3 diffuse, specularColor;
     vec3 colorOut = vec3(0.0, 0.0, 0.0);
     float shininess;
     HitRecord dummy;
 
-    vec3 light = normalize(pl.pos - rec.pos);
-    float intensity = max(dot(rec.normal, light), 0.0);
-    Ray shadowRay = createRay(rec.pos + epsilon * rec.normal, light);
+    // Light vector
+    vec3 L = normalize(pl.pos - rec.pos);
+    // Calculation of shadow ray for hard shadows effect
+    Ray shadowRay = createRay(rec.pos + epsilon * rec.normal, L);
 
-    if (intensity > 0.0) {
+    if (max(dot(rec.normal, L), 0.0) > 0.0) {
         if (!hit_world(shadowRay, 0.0, length(pl.pos - rec.pos), dummy)) {
+            // Diffuse material diffuse and specular components
             if (rec.material.type == MT_DIFFUSE) {
-               diffCol = rec.material.albedo / pi * intensity;
-               specCol = vec3(0.1, 0.1, 0.1);
-               shininess = 10.0;
+                shininess = 10.0;
+                diffuse = rec.material.albedo / pi * max(dot(rec.normal, L), 0.0);
+                specularColor = vec3(0.1);
             }
+            // Metal material diffuse and specular components
             if (rec.material.type == MT_METAL) {
-                diffCol = vec3(0.0);
-                specCol = rec.material.albedo;
-                shininess = 200.0;
+                shininess = 100.0;
+                diffuse = vec3(0.0);
+                specularColor = rec.material.albedo;
             }
+            // Dialectric material diffuse and specular components
             if (rec.material.type == MT_DIALECTRIC) {
-                diffCol = vec3(0.0);
-                specCol = vec3(0.04, 0.04, 0.04);
-                shininess = 500.0;
+                shininess = 300.0;
+                diffuse = vec3(0.0);
+                specularColor = vec3(0.1);
             }
 
-            vec3 halfwayVector = normalize(light - r.d);
-            float intSpec = max(dot(halfwayVector, rec.normal), 0.0);
-            vec3 spec = specCol * pow(intSpec, shininess);
-            colorOut = (diffCol + spec) * pl.color;
+            // Calculation of specular intensity with halfwayVector
+            vec3 halfwayVector = normalize(L - r.d);
+            vec3 specular = specularColor * pow(max(dot(halfwayVector, rec.normal), 0.0), shininess);
+            // Final local color with diffuse and specular components
+            colorOut = (diffuse + specular) * pl.color;
        }
     }
-    
 	return colorOut; 
 }
 
 #define MAX_BOUNCES 10
 
 vec3 rayColor(Ray r) {
-
     HitRecord rec;
-    vec3 col = vec3(0.0);
+    vec3 color = vec3(0.0);
     vec3 throughput = vec3(1.0f, 1.0f, 1.0f);
+
     for(int i = 0; i < MAX_BOUNCES; ++i) {
         if(hit_world(r, 0.001, 10000.0, rec)) {
-
-            //calculate direct lighting with 3 white point lights:
-            bool outside = dot(r.d, rec.normal) < 0.0;
-            if (outside) {
-                col += directlighting(createPointLight(vec3(-10.0, 15.0, 0.0), vec3(1.0, 1.0, 1.0)), r, rec) * throughput;
-                col += directlighting(createPointLight(vec3(8.0, 15.0, 3.0), vec3(1.0, 1.0, 1.0)), r, rec) * throughput;
-                col += directlighting(createPointLight(vec3(1.0, 15.0, -9.0), vec3(1.0, 1.0, 1.0)), r, rec) * throughput;
+            // Calculation of direct lighting with 3 white point lights
+            if (dot(r.d, rec.normal) < 0.0) {
+                color += directlighting(createPointLight(vec3(-10.0, 15.0, 0.0), vec3(1.0, 1.0, 1.0)), r, rec) * throughput;
+                color += directlighting(createPointLight(vec3(8.0, 15.0, 3.0), vec3(1.0, 1.0, 1.0)), r, rec) * throughput;
+                color += directlighting(createPointLight(vec3(1.0, 15.0, -9.0), vec3(1.0, 1.0, 1.0)), r, rec) * throughput;
             }
            
-            //calculate secondary ray and update throughput
+            //Calculation of secondary rays and updated throughput
             Ray scatterRay;
             vec3 atten;
             if(scatter(r, rec, atten, scatterRay)) {
@@ -235,14 +237,13 @@ vec3 rayColor(Ray r) {
             } else {
                 return vec3(0.0);
             }
-        
         } else {
             float t = 0.8 * (r.d.y + 1.0);
-            col += throughput * mix(vec3(1.0), vec3(0.5, 0.7, 1.0), t);
+            color += throughput * mix(vec3(1.0), vec3(0.5, 0.7, 1.0), t);
             break;
         }
     }
-    return col;
+    return color;
 }
 
 #define MAX_SAMPLES 10000.0

@@ -118,10 +118,13 @@ Camera createCamera(
 }
 
 Ray getRay(Camera cam, vec2 pixel_sample) { //rnd pixel_sample viewport coordinates
-    vec2 ls = cam.lensRadius * randomInUnitDisk(gSeed);  //ls - lens sample for DOF
+    // Lens sample for DOF
+    vec2 ls = cam.lensRadius * randomInUnitDisk(gSeed);
+    // Time for motion blur
     float time = cam.time0 + hash1(gSeed) * (cam.time1 - cam.time0);
-
+    // New ray origin with lens sample offset
     vec3 eye_offset = cam.eye + cam.u*ls.x + cam.v*ls.y;
+    // Ray direction from lens sample to projected sample point
     vec3 ray_dir = (cam.u*((pixel_sample.x - ls.x) / iResolution.x - 0.5f)*cam.width + cam.v*((pixel_sample.y - ls.y) / iResolution.y - 0.5f)*cam.height - cam.n*cam.focusDist);	
     
     return createRay(eye_offset, normalize(ray_dir), time);
@@ -169,6 +172,7 @@ struct HitRecord {
     Material material;
 };
 
+// Check if there is refraction or total internal reflection
 bool refract(vec3 rayDir, vec3 normal, float niOverNt, out vec3 refracted) {
     vec3 uv = normalize(rayDir);
     float dt = dot(uv,normal);
@@ -179,28 +183,35 @@ bool refract(vec3 rayDir, vec3 normal, float niOverNt, out vec3 refracted) {
     } else return false;
 }
 
+// Calculation of Schlick aproximation
 float schlick(float cosine, float refIdx) {
-    // Schlick aproximation
     float r0 = (1.0-refIdx) / (1.0+refIdx);
     r0 = r0*r0;
     return r0 + (1.0-r0)*pow((1.0-cosine),5.0);
 }
 
 bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered) {
+    // Scattered ray for diffuse materials
     if(rec.material.type == MT_DIFFUSE) {
+        // Calculate S point in circunference of unit sphere of intersection point
         vec3 target = rec.pos + rec.normal + normalize(randomInUnitSphere(gSeed));
+        // Calculate scattered ray with direction from intersection point to S
         rScattered = createRay(rec.pos, normalize(target-rec.pos), rIn.t);
+        // Use albedo for attenuation
         atten = rec.material.albedo * max(dot(rScattered.d, rec.normal), 0.0) / pi;
         return true;
     }
-
+    // Scattered ray for metal materials
     if(rec.material.type == MT_METAL) {
+        // Calculate reflected ray direction
         vec3 reflected = reflect(normalize(rIn.d), rec.normal);
+        // Calculate scattered ray with direction from reflected ray and roughness parameter for fuzzy reflections
         rScattered = createRay(rec.pos, normalize(reflected + rec.material.roughness*randomInUnitSphere(gSeed)), rIn.t);
+        // Use albedo for attenuation
         atten = rec.material.albedo;
         return (dot(rScattered.d, rec.normal) > 0.0);
     }
-
+    // Scattered ray for dialectric materials
     if(rec.material.type == MT_DIALECTRIC) {
         atten = rec.material.albedo;
         vec3 outwardNormal;
@@ -209,6 +220,7 @@ bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered) {
         vec3 refracted;
         float reflect_prob;
 
+        // Check if ray hits from inside or outside to calculate hit normal, refraction index and cosine
         if(dot(rIn.d, rec.normal) > 0.0) { //hit inside
             outwardNormal = -rec.normal;
             niOverNt = rec.material.refIdx;
@@ -219,17 +231,22 @@ bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered) {
             cosine = -dot(rIn.d, rec.normal); 
         }
 
-        //Use probabilistic math to decide if scatter a reflected ray or a refracted ray
-
+        // Check total internal reflection
         if (refract(rIn.d, outwardNormal, niOverNt, refracted)) {
+            // If there is refraction, calculate reflection probability with schlick approximation
             reflect_prob = schlick(cosine, rec.material.refIdx);
         } else {
+            // If there is total internal reflection, reflection probability is 1
             reflect_prob = 1.0;
         }
+        // Decide if scatter a reflected ray or a refracted ray using random function
         if (hash1(gSeed) < reflect_prob) {
+            // Calculate reflected direction
             vec3 reflected = reflect(rIn.d, rec.normal);
+            // Calculate scattered ray using reflection
             rScattered = createRay(rec.pos, normalize(reflected), rIn.t);
         } else {
+            // Calculate scattered ray using refraction
             rScattered = createRay(rec.pos, normalize(refracted), rIn.t);
         }
 
@@ -259,17 +276,17 @@ Triangle createTriangle(vec3 v0, vec3 v1, vec3 v2) {
 }
 
 bool hit_triangle(Triangle t, Ray r, float tmin, float tmax, out HitRecord rec) {
-    // create the normal
+    // Calculate the triangle normal
     vec3 ba = t.b - t.a;
     vec3 ca = t.c - t.a;
     vec3 normal = normalize(cross(ba, ca));
     
-    // matrix values
+    // Matrix values
 	float a = t.a.x - t.b.x, b = t.a.x - t.c.x, c = r.d.x, d = t.a.x - r.o.x;
 	float e = t.a.y - t.b.y, f = t.a.y - t.c.y, g = r.d.y, h = t.a.y - r.o.y;
 	float i = t.a.z - t.b.z, j = t.a.z - t.c.z, k = r.d.z, l = t.a.z - r.o.z;
 
-	// determinants
+	// Determinants
 	float m = f * k - g * j;
 	float n = h * k - g * l;
 	float p = f * l - h * j;
@@ -289,8 +306,10 @@ bool hit_triangle(Triangle t, Ray r, float tmin, float tmax, out HitRecord rec) 
 
 	if (beta + gamma > 1.0f) return false;
 
+    // Calculate t parameter for intersection distance
 	float dist = (a * p - b * extra + d * s) / denom;
 
+    // Update object attributes
     if(dist < tmax && dist > tmin) {
         rec.t = dist;
         rec.normal = normal;
@@ -330,10 +349,10 @@ MovingSphere createMovingSphere(vec3 center0, vec3 center1, float radius, float 
     return s;
 }
 
+// Calculate moving center for moving spheres using time parameters (motion blur effect)
 vec3 center(MovingSphere mvsphere, float time) {
     return mvsphere.center0 + ((time - mvsphere.time0) / (mvsphere.time1 - mvsphere.time0)) * (mvsphere.center1 - mvsphere.center0);
 }
-
 
 /*
  * The function naming convention changes with these functions to show that they implement a sort of interface for
@@ -347,20 +366,19 @@ bool hit_sphere(Sphere s, Ray r, float tmin, float tmax, out HitRecord rec) {
     float b = dot(oc, r.d);
     float c = dot(oc, oc) - s.radius * s.radius;
     float discriminant = b * b - a * c;
-    if(discriminant > 0.0)
-    {
+    if(discriminant > 0.0) {
         float sqrtDiscriminant = sqrt(discriminant);
+
+        // Calculate t parameters for sphere intersection
         float temp = (-b - sqrtDiscriminant) / a;
-        if(temp < tmax && temp > tmin)
-        {
+        if(temp < tmax && temp > tmin) {
             rec.t = temp;
             rec.pos = pointOnRay(r, rec.t);
             rec.normal = (rec.pos - s.center) / s.radius;
             return true;
         }
         temp = (-b + sqrtDiscriminant) / a;
-        if(temp < tmax && temp > tmin)
-        {
+        if(temp < tmax && temp > tmin) {
             rec.t = temp;
             rec.pos = pointOnRay(r, rec.t);
             rec.normal = (rec.pos - s.center) / s.radius;
@@ -372,6 +390,7 @@ bool hit_sphere(Sphere s, Ray r, float tmin, float tmax, out HitRecord rec) {
 
 bool hit_movingSphere(MovingSphere s, Ray r, float tmin, float tmax, out HitRecord rec) {
     // Intersection check
+    // Calculate moving sphere center with time parameter
     vec3 sphereCenter = center(s, r.t);
     vec3 oc = r.o - sphereCenter;
     float a = dot(r.d, r.d);
@@ -380,17 +399,17 @@ bool hit_movingSphere(MovingSphere s, Ray r, float tmin, float tmax, out HitReco
     float discriminant = b * b - a * c;
     if(discriminant > 0.0) {
         float sqrtDiscriminant = sqrt(discriminant);
+
+        // Calculate t parameters for sphere intersection
         float temp = (-b - sqrtDiscriminant) / a;
-        if(temp < tmax && temp > tmin)
-        {
+        if(temp < tmax && temp > tmin) {
             rec.t = temp;
             rec.pos = pointOnRay(r, rec.t);
             rec.normal = (rec.pos - sphereCenter) / s.radius;
             return true;
         }
         temp = (-b + sqrtDiscriminant) / a;
-        if(temp < tmax && temp > tmin)
-        {
+        if(temp < tmax && temp > tmin) {
             rec.t = temp;
             rec.pos = pointOnRay(r, rec.t);
             rec.normal = (rec.pos - sphereCenter) / s.radius;
