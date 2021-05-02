@@ -138,7 +138,7 @@ Ray getRay(Camera cam, vec2 pixel_sample) { //rnd pixel_sample viewport coordina
 struct Material {
     int type;
     vec3 albedo;
-    float roughness; // controls roughness for metals
+    float roughness; // controls roughness
     float refIdx; // index of refraction for dialectric
 };
 
@@ -157,11 +157,12 @@ Material createMetalMaterial(vec3 albedo, float roughness) {
     return m;
 }
 
-Material createDialectricMaterial(vec3 albedo, float refIdx) {
+Material createDialectricMaterial(vec3 albedo, float refIdx, float roughness) {
     Material m;
     m.type = MT_DIALECTRIC;
     m.albedo = albedo;
     m.refIdx = refIdx;
+    m.roughness = roughness;
     return m;
 }
 
@@ -244,10 +245,10 @@ bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered) {
             // Calculate reflected direction
             vec3 reflected = reflect(rIn.d, rec.normal);
             // Calculate scattered ray using reflection
-            rScattered = createRay(rec.pos, normalize(reflected), rIn.t);
+            rScattered = createRay(rec.pos, normalize(reflected + rec.material.roughness*randomInUnitSphere(gSeed)), rIn.t);
         } else {
             // Calculate scattered ray using refraction
-            rScattered = createRay(rec.pos, normalize(refracted), rIn.t);
+            rScattered = createRay(rec.pos, normalize(refracted + rec.material.roughness*randomInUnitSphere(gSeed)), rIn.t);
         }
 
         return true;
