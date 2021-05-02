@@ -39,8 +39,8 @@ bool hit_world(Ray r, float tmin, float tmax, out HitRecord rec) {
         rec))
     {
         hit = true;
-        rec.material = createDiffuseMaterial(vec3(0.2, 0.95, 0.1));
-        //rec.material = createDiffuseMaterial(vec3(0.4, 0.2, 0.1));
+        //rec.material = createDiffuseMaterial(vec3(0.2, 0.95, 0.1));
+        rec.material = createDiffuseMaterial(vec3(0.4, 0.2, 0.1));
     }
 
     if(hit_sphere(
@@ -274,19 +274,17 @@ void main() {
 //usa-se o 4 canal de cor para guardar o numero de samples e não o iFrame pois quando se mexe o rato faz-se reset
 
     vec4 prev = texture(iChannel0, gl_FragCoord.xy / iResolution.xy);
-    vec3 prevLinear = toLinear(prev.xyz);  
-
+    vec3 prevLinear = toLinear(prev.xyz);
+    
     vec2 ps = gl_FragCoord.xy + hash2(gSeed);
     //vec2 ps = gl_FragCoord.xy;
     vec3 color = rayColor(getRay(cam, ps));
 
-    if(iMouseButton.x != 0.0 || iMouseButton.y != 0.0)
-    {
+    if(iMouseButton.x != 0.0 || iMouseButton.y != 0.0) {
         gl_FragColor = vec4(toGamma(color), 1.0);  //samples number reset = 1
         return;
     }
-    if(prev.w > MAX_SAMPLES)   
-    {
+    if(prev.w > MAX_SAMPLES) {
         gl_FragColor = prev;
         return;
     }

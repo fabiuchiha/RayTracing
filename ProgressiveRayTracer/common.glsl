@@ -121,8 +121,8 @@ Ray getRay(Camera cam, vec2 pixel_sample) { //rnd pixel_sample viewport coordina
     vec2 ls = cam.lensRadius * randomInUnitDisk(gSeed);  //ls - lens sample for DOF
     float time = cam.time0 + hash1(gSeed) * (cam.time1 - cam.time0);
 
-    vec3 ray_dir = (cam.u*((pixel_sample.x - ls.x) / iResolution.x - 0.5f)*cam.width + cam.v*((pixel_sample.y - ls.y) / iResolution.y - 0.5f)*cam.height - cam.n*cam.focusDist);	
     vec3 eye_offset = cam.eye + cam.u*ls.x + cam.v*ls.y;
+    vec3 ray_dir = (cam.u*((pixel_sample.x - ls.x) / iResolution.x - 0.5f)*cam.width + cam.v*((pixel_sample.y - ls.y) / iResolution.y - 0.5f)*cam.height - cam.n*cam.focusDist);	
     
     return createRay(eye_offset, normalize(ray_dir), time);
 }
@@ -189,14 +189,14 @@ float schlick(float cosine, float refIdx) {
 bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered) {
     if(rec.material.type == MT_DIFFUSE) {
         vec3 target = rec.pos + rec.normal + normalize(randomInUnitSphere(gSeed));
-        rScattered = createRay(rec.pos, target-rec.pos);
+        rScattered = createRay(rec.pos, normalize(target-rec.pos), rIn.t);
         atten = rec.material.albedo * max(dot(rScattered.d, rec.normal), 0.0) / pi;
         return true;
     }
 
     if(rec.material.type == MT_METAL) {
         vec3 reflected = reflect(normalize(rIn.d), rec.normal);
-        rScattered = createRay(rec.pos, reflected + rec.material.roughness*randomInUnitSphere(gSeed));
+        rScattered = createRay(rec.pos, normalize(reflected + rec.material.roughness*randomInUnitSphere(gSeed)), rIn.t);
         atten = rec.material.albedo;
         return (dot(rScattered.d, rec.normal) > 0.0);
     }
@@ -206,7 +206,6 @@ bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered) {
         vec3 outwardNormal;
         float niOverNt;
         float cosine;
-        vec3 reflected = reflect(rIn.d, rec.normal);
         vec3 refracted;
         float reflect_prob;
 
@@ -225,13 +224,13 @@ bool scatter(Ray rIn, HitRecord rec, out vec3 atten, out Ray rScattered) {
         if (refract(rIn.d, outwardNormal, niOverNt, refracted)) {
             reflect_prob = schlick(cosine, rec.material.refIdx);
         } else {
-            rScattered = createRay(rec.pos, reflected);
             reflect_prob = 1.0;
         }
         if (hash1(gSeed) < reflect_prob) {
-            rScattered = createRay(rec.pos, reflected);
+            vec3 reflected = reflect(rIn.d, rec.normal);
+            rScattered = createRay(rec.pos, normalize(reflected), rIn.t);
         } else {
-            rScattered = createRay(rec.pos, refracted);
+            rScattered = createRay(rec.pos, normalize(refracted), rIn.t);
         }
 
         return true;
@@ -341,84 +340,63 @@ vec3 center(MovingSphere mvsphere, float time) {
  * the book's notion of "hittable". E.g. hit_<type>.
  */
 
- bool solveQuadratic(float a, float b, float c, out float t0, out float t1) {
-	float discr = b * b - 4.0 * a * c;
-	if (discr < 0.0) return false;
-	else if (discr == 0.0) t0 = t1 = -0.5 * b / a;
-	else {
-		float q = (b > 0.0) ?
-			-0.5 * (b + sqrt(discr)) :
-			-0.5 * (b - sqrt(discr));
-		t0 = q / a;
-		t1 = c / q;
-	}
-	if (t0 > t1) {
-        float temp = t0;
-        t0 = t1;
-        t1 = temp;
-    }
-	return true;
-}
-
 bool hit_sphere(Sphere s, Ray r, float tmin, float tmax, out HitRecord rec) {
     // Intersection check
-    float t0, t1;
-	vec3 oc = r.o - s.center;
-	float a = dot(r.d, r.d);
-	float b = dot(oc,r.d)*2.0;
-	float c = dot(oc,oc) - s.radius;
-
-	if (!solveQuadratic(a, b, c, t0, t1)) return false;
-	if (t0 > t1) {
-        float temp = t0;
-        t0 = t1;
-        t1 = temp;
+    vec3 oc = r.o - s.center;
+    float a = dot(r.d, r.d);
+    float b = dot(oc, r.d);
+    float c = dot(oc, oc) - s.radius * s.radius;
+    float discriminant = b * b - a * c;
+    if(discriminant > 0.0)
+    {
+        float sqrtDiscriminant = sqrt(discriminant);
+        float temp = (-b - sqrtDiscriminant) / a;
+        if(temp < tmax && temp > tmin)
+        {
+            rec.t = temp;
+            rec.pos = pointOnRay(r, rec.t);
+            rec.normal = (rec.pos - s.center) / s.radius;
+            return true;
+        }
+        temp = (-b + sqrtDiscriminant) / a;
+        if(temp < tmax && temp > tmin)
+        {
+            rec.t = temp;
+            rec.pos = pointOnRay(r, rec.t);
+            rec.normal = (rec.pos - s.center) / s.radius;
+            return true;
+        }
     }
-
-	if (t0 < 0.0) {
-		t0 = t1; // if t0 is negative, let's use t1 instead 
-		if (t0 < 0.0) return false; // both t0 and t1 are negative 
-	}
-
-    float t = t0;
-    if(t < tmax && t > tmin) {
-        rec.t = t;
-        rec.pos = pointOnRay(r, rec.t);
-        vec3 normal = normalize(rec.pos-s.center);
-        rec.normal = normal;
-        return true;
-    } else return false;
+    return false;
 }
 
 bool hit_movingSphere(MovingSphere s, Ray r, float tmin, float tmax, out HitRecord rec) {
     // Intersection check
-    float t0, t1;
-    float time = iTimeDelta;
-    vec3 center = center(s, time);
-
-	vec3 oc = r.o - center;
-	float a = dot(r.d, r.d);
-	float b = dot(oc,r.d)*2.0;
-	float c = dot(oc,oc) - s.radius;
-
-	if (!solveQuadratic(a, b, c, t0, t1)) return false;
-	if (t0 > t1) {
-        float temp = t0;
-        t0 = t1;
-        t1 = temp;
+    vec3 sphereCenter = center(s, r.t);
+    vec3 oc = r.o - sphereCenter;
+    float a = dot(r.d, r.d);
+    float b = dot(oc, r.d);
+    float c = dot(oc, oc) - s.radius * s.radius;
+    float discriminant = b * b - a * c;
+    if(discriminant > 0.0) {
+        float sqrtDiscriminant = sqrt(discriminant);
+        float temp = (-b - sqrtDiscriminant) / a;
+        if(temp < tmax && temp > tmin)
+        {
+            rec.t = temp;
+            rec.pos = pointOnRay(r, rec.t);
+            rec.normal = (rec.pos - sphereCenter) / s.radius;
+            return true;
+        }
+        temp = (-b + sqrtDiscriminant) / a;
+        if(temp < tmax && temp > tmin)
+        {
+            rec.t = temp;
+            rec.pos = pointOnRay(r, rec.t);
+            rec.normal = (rec.pos - sphereCenter) / s.radius;
+            return true;
+        }
     }
+    return false;
 
-	if (t0 < 0.0) {
-		t0 = t1; // if t0 is negative, let's use t1 instead 
-		if (t0 < 0.0) return false; // both t0 and t1 are negative 
-	}
-
-    float t = t0;
-    if(t < tmax && t > tmin) {
-        rec.t = t;
-        rec.pos = pointOnRay(r, rec.t);
-        vec3 normal = normalize(rec.pos-center);
-        rec.normal = normal;
-        return true;
-    } else return false;
 }
